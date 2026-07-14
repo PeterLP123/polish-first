@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#c62033"/>
+  <path d="M100 118h312a44 44 0 0 1 44 44v176a44 44 0 0 1-44 44H278l-83 62 18-62H100a44 44 0 0 1-44-44V162a44 44 0 0 1 44-44Z" fill="#fffaf2"/>
+  <text x="256" y="286" fill="#c62033" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="94" font-weight="800" text-anchor="middle">Cześć!</text>
+</svg>

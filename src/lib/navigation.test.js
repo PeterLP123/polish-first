@@ -6,6 +6,8 @@ describe("section navigation", () => {
     expect(viewFromHash("#course")).toBe("course");
     expect(viewFromHash("#/practice")).toBe("practice");
     expect(viewFromHash("#grammar/details")).toBe("grammar");
+    expect(viewFromHash("#session")).toBe("session");
+    expect(viewFromHash("#data")).toBe("data");
   });
 
   it("falls back to Today for an unknown or empty hash", () => {

@@ -1,0 +1,32 @@
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { DEFAULT_PROGRESS, serializeProgress } from "../lib/learning.js";
+import ProgressDataView from "./ProgressDataView.jsx";
+
+describe("progress data tools", () => {
+  it("previews and confirms a valid import", async () => {
+    const onReplace = vi.fn();
+    const imported = { ...DEFAULT_PROGRESS, xp: 123 };
+    const { container } = render(<ProgressDataView progress={DEFAULT_PROGRESS} onReplaceProgress={onReplace} />);
+    const input = container.querySelector('input[type="file"]');
+    const file = new File([serializeProgress(imported)], "progress.json", { type: "application/json" });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(await screen.findByRole("heading", { name: /replace current progress/i })).toBeInTheDocument();
+    expect(screen.getByText(/123 XP/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /confirm import/i }));
+    expect(onReplace).toHaveBeenCalledWith(expect.objectContaining({ xp: 123, version: 4 }));
+  });
+
+  it("rejects invalid files without replacing progress", async () => {
+    const onReplace = vi.fn();
+    const { container } = render(<ProgressDataView progress={DEFAULT_PROGRESS} onReplaceProgress={onReplace} />);
+    const file = new File(["not-json"], "broken.json", { type: "application/json" });
+    fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [file] } });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not valid JSON/i);
+    await waitFor(() => expect(onReplace).not.toHaveBeenCalled());
+  });
+});
