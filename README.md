@@ -18,7 +18,7 @@ The current production version is available at [https://peterlp123.github.io/pol
 - 362 useful words and phrases across 33 practical conversation units
 - Polish audio through the browser's `pl-PL` speech voice
 - English-friendly pronunciation guides with marked word stress
-- Optional microphone practice and approximate speech-match feedback
+- Optional microphone practice, phone-dictation fallback, and approximate speech-match feedback
 - Sixteen five-turn branching dialogues with three response options per turn, covering cafés, introductions, travel, health, errands, sightseeing, and home problems
 - Flashcard, listening, sentence-building, and speaking drills that prioritise your weakest phrases
 - Finite daily sessions that mix new phrases, due reviews, and a real-life dialogue

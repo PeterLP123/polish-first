@@ -38,6 +38,26 @@ test("opens the new practice modes from validated deep links", async ({ page }) 
   await expect(page.getByText("COMPLETE THE GAP", { exact: true })).toBeVisible();
 });
 
+test("keeps Polish text and dictation inputs mobile-ready", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/#practice?mode=writing&topic=All");
+  const writing = page.getByRole("textbox", { name: /your polish/i });
+  await expect(writing).toHaveAttribute("lang", "pl");
+  await expect(writing).toHaveAttribute("inputmode", "text");
+  await expect(writing).toHaveAttribute("enterkeyhint", "done");
+  expect(Number.parseFloat(await writing.evaluate((element) => getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16);
+
+  await page.getByRole("tab", { name: /^speak/i }).click();
+  await page.getByRole("button", { name: /phone dictation/i }).click();
+  const dictation = page.getByRole("textbox", { name: /what did your phone hear/i });
+  await expect(dictation).toHaveAttribute("lang", "pl");
+  await expect(dictation).toHaveAttribute("autocomplete", "off");
+  await expect(dictation).toHaveAttribute("autocapitalize", "sentences");
+  await dictation.fill("Dzień dobry");
+  await expect(page.getByRole("button", { name: /check transcript/i })).toBeEnabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+});
+
 test("migrates v4 progress and unlocks a completed-stage milestone", async ({ page }) => {
   const completedUnits = ["first-words", "meet-someone", "cafe", "directions", "shopping", "time-plans"];
   await page.goto("/#data");

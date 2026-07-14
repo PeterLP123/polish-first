@@ -62,7 +62,8 @@ function TextTask({ title, prompt, accepted, scorer, onComplete, multiline = fal
   const [value, setValue] = useState("");
   const [checked, setChecked] = useState(null);
   const score = scorer(value);
-  const input = multiline ? <textarea rows="4" value={value} onChange={(event) => setValue(event.target.value)} /> : <input value={value} onChange={(event) => setValue(event.target.value)} />;
+  const polishInputProps = { lang: "pl", inputMode: "text", enterKeyHint: "done", autoComplete: "off", autoCapitalize: "sentences", autoCorrect: "on", spellCheck: true };
+  const input = multiline ? <textarea {...polishInputProps} rows="4" value={value} onChange={(event) => setValue(event.target.value)} placeholder="Write or use your phone keyboard's microphone" /> : <input {...polishInputProps} value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && value.trim()) { event.preventDefault(); setChecked(score); } }} placeholder="Type or dictate your Polish answer" />;
   return <div className="milestone-task text-practice"><h2>{title}</h2><p>{prompt}</p><label>Your answer{input}</label>{checked !== null && <div className={`builder-feedback ${score ? "correct" : "wrong"}`} role="status"><strong>{score ? "Correct." : `Model: ${accepted[0]}`}</strong></div>}{checked === null ? <button className="primary-button" disabled={!value.trim()} onClick={() => setChecked(score)}>Check answer</button> : <button className="primary-button" onClick={() => onComplete(score)}>Continue <ArrowRight size={17} /></button>}</div>;
 }
 

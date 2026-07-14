@@ -24,7 +24,7 @@ import {
 import { allPhrases, courseTopics, grammarGuides, soundLessons, units } from "./data/course.js";
 import { addStudy, buildDailySession, currentSession, effectiveStreak, getDuePhrases, loadProgress, localDate, masterySummary, recordAttempt, recordDialogue, recordMilestoneResult, saveProgress, scoreForRating, todayMinutes } from "./lib/learning.js";
 import { viewFromHash } from "./lib/navigation.js";
-import { listenForPolish, speakPolish } from "./lib/speech.js";
+import { listenForPolish, speakPolish, speechRecognitionMessage } from "./lib/speech.js";
 import DialoguesPage from "./components/DialoguesView.jsx";
 import GuidedSession from "./components/GuidedSession.jsx";
 import { AudioButton, PronunciationCard } from "./components/LearningControls.jsx";
@@ -195,7 +195,7 @@ function CourseView({ progress, onOpenUnit }) {
         <label className="course-search">
           <Search size={19} aria-hidden="true" />
           <span className="sr-only">Search units and phrases</span>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search units or phrases…" type="search" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search units or phrases…" type="search" inputMode="search" enterKeyHint="search" autoComplete="off" aria-label="Search units or phrases" />
         </label>
         <div className="topic-filters" role="group" aria-label="Filter units by topic">
           {courseTopics.map((item) => <button key={item} className={topic === item ? "active" : ""} onClick={() => setTopic(item)} aria-pressed={topic === item}>{item}</button>)}
@@ -293,31 +293,52 @@ function UnitLesson({ unit, progress, onClose, award }) {
 function SpeechMiniPractice({ phrase, onSuccess }) {
   const [status, setStatus] = useState("idle");
   const [score, setScore] = useState(null);
+  const [hint, setHint] = useState("Speak naturally, not perfectly");
+  const recognitionRef = useRef(null);
 
   useEffect(() => {
+    recognitionRef.current?.abort?.();
+    recognitionRef.current = null;
     setStatus("idle");
     setScore(null);
+    setHint("Speak naturally, not perfectly");
+    return () => recognitionRef.current?.abort?.();
   }, [phrase.id]);
 
   const listen = () => {
+    if (status === "listening") {
+      recognitionRef.current?.stop?.();
+      return;
+    }
     const recognition = listenForPolish({
       onStart: () => setStatus("listening"),
-      onEnd: () => setStatus((current) => current === "listening" ? "idle" : current),
-      onError: () => setStatus("unsupported"),
+      onEnd: () => {
+        recognitionRef.current = null;
+        setStatus((current) => current === "listening" ? "idle" : current);
+      },
+      onError: (code) => {
+        setStatus("unsupported");
+        setHint(speechRecognitionMessage(code));
+      },
       onResult: (alternatives) => {
         const best = Math.max(...alternatives.map((value) => similarity(value, phrase.polish)));
         setScore(Math.round(best * 100));
         setStatus("done");
+        setHint("Speak naturally, not perfectly");
         if (best >= 0.7) onSuccess?.();
       },
     });
-    if (!recognition) setStatus("unsupported");
+    recognitionRef.current = recognition;
+    if (!recognition) {
+      setStatus("unsupported");
+      setHint("Live speech checking is unavailable here. You can still listen and repeat aloud.");
+    }
   };
 
   return (
-    <button className={`speak-prompt ${status}`} onClick={listen} disabled={status === "listening"}>
+    <button type="button" className={`speak-prompt ${status}`} onClick={listen} aria-pressed={status === "listening"}>
       <span className="mic-disc"><Mic size={20} /></span>
-      <span><strong>{status === "listening" ? "I'm listening…" : score ? `${score}% match — try again` : status === "unsupported" ? "Say it aloud" : "Now you try"}</strong><small>{status === "unsupported" ? "Speech checking unavailable here" : "Speak naturally, not perfectly"}</small></span>
+      <span><strong>{status === "listening" ? "Tap to stop" : score ? `${score}% match — try again` : status === "unsupported" ? "Say it aloud" : "Now you try"}</strong><small>{status === "listening" ? "Listening for Polish…" : hint}</small></span>
     </button>
   );
 }
