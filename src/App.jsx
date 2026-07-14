@@ -22,6 +22,7 @@ import {
   Pause,
   Play,
   RotateCcw,
+  Search,
   Sparkles,
   Star,
   Target,
@@ -30,8 +31,9 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { allPhrases, dialogues, grammarGuides, soundLessons, units } from "./data/course.js";
+import { allPhrases, courseTopics, dialogues, grammarGuides, soundLessons, units } from "./data/course.js";
 import { addStudy, buildReviewDeck, effectiveStreak, loadProgress, saveProgress, shuffled, similarity, weekActivity } from "./lib/learning.js";
+import { viewFromHash } from "./lib/navigation.js";
 import { listenForPolish, speakPolish } from "./lib/speech.js";
 
 const NAV_ITEMS = [
@@ -257,14 +259,40 @@ function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal }) {
 }
 
 function CourseView({ progress, onOpenUnit }) {
+  const [query, setQuery] = useState("");
+  const [topic, setTopic] = useState("All");
+  const nextUnit = units.find((unit) => !progress.completedUnits.includes(unit.id)) || units[units.length - 1];
+  const normalizedQuery = query.trim().toLocaleLowerCase("pl");
+  const visibleUnits = units.filter((unit) => {
+    const matchesTopic = topic === "All" || unit.topic === topic;
+    const searchable = `${unit.title} ${unit.description} ${unit.topic} ${unit.phrases.map((phrase) => `${phrase.polish} ${phrase.english}`).join(" ")}`.toLocaleLowerCase("pl");
+    return matchesTopic && (!normalizedQuery || searchable.includes(normalizedQuery));
+  });
+
   return (
     <div className="view-stack">
       <header className="page-header">
         <div><span className="eyebrow red"><GraduationCap size={15} /> THE CONVERSATION PATH</span><h1>Polish for real life</h1><p>{allPhrases.length} high-value phrases across {units.length} practical beginner units. Nothing is locked.</p></div>
         <ProgressRing value={(progress.completedUnits.length / units.length) * 100}><strong>{progress.completedUnits.length}</strong><span>of {units.length}</span></ProgressRing>
       </header>
+      <section className="course-continue panel" aria-label="Continue learning">
+        <div className="course-continue-icon" aria-hidden="true">{nextUnit.icon}</div>
+        <div><span className="eyebrow">UP NEXT · {nextUnit.stage}</span><h2>{nextUnit.title}</h2><p>{nextUnit.phrases.length} phrases · {nextUnit.time} min</p></div>
+        <button className="primary-button" onClick={() => onOpenUnit(nextUnit)}>{progress.learnedPhrases.some((id) => id.startsWith(`${nextUnit.id}-`)) ? "Continue unit" : "Start unit"}<ArrowRight size={17} /></button>
+      </section>
+      <section className="course-tools" aria-label="Find a course unit">
+        <label className="course-search">
+          <Search size={19} aria-hidden="true" />
+          <span className="sr-only">Search units and phrases</span>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search units or phrases…" type="search" />
+        </label>
+        <div className="topic-filters" role="group" aria-label="Filter units by topic">
+          {courseTopics.map((item) => <button key={item} className={topic === item ? "active" : ""} onClick={() => setTopic(item)} aria-pressed={topic === item}>{item}</button>)}
+        </div>
+        <p className="course-result-count" aria-live="polite">Showing {visibleUnits.length} of {units.length} units</p>
+      </section>
       <div className="course-grid">
-        {units.map((unit) => {
+        {visibleUnits.map((unit) => {
           const done = progress.completedUnits.includes(unit.id);
           const learned = unit.phrases.filter((phrase) => progress.learnedPhrases.includes(phrase.id)).length;
           const percent = Math.round((learned / unit.phrases.length) * 100);
@@ -275,7 +303,7 @@ function CourseView({ progress, onOpenUnit }) {
                 <span className="unit-art">{unit.icon}</span>
                 {done && <span className="complete-label">Complete</span>}
               </div>
-              <small>{unit.eyebrow}</small>
+              <div className="unit-tags"><small>{unit.topic}</small><span>{unit.stage}</span></div>
               <h2>{unit.title}</h2>
               <p>{unit.description}</p>
               <div className="unit-progress"><span style={{ width: `${done ? 100 : percent}%` }} /></div>
@@ -287,6 +315,7 @@ function CourseView({ progress, onOpenUnit }) {
           );
         })}
       </div>
+      {!visibleUnits.length && <section className="course-empty panel"><Search size={28} /><h2>No matching units</h2><p>Try a broader phrase or show every topic.</p><button className="secondary-button" onClick={() => { setQuery(""); setTopic("All"); }}>Clear filters</button></section>}
     </div>
   );
 }
@@ -294,7 +323,7 @@ function CourseView({ progress, onOpenUnit }) {
 function UnitLesson({ unit, progress, onClose, award }) {
   const firstUnlearned = unit.phrases.findIndex((phrase) => !progress.learnedPhrases.includes(phrase.id));
   const [index, setIndex] = useState(firstUnlearned === -1 ? 0 : firstUnlearned);
-  const [showMeaning, setShowMeaning] = useState(true);
+  const [showMeaning, setShowMeaning] = useState(false);
   const phrase = unit.phrases[index];
   const isLast = index === unit.phrases.length - 1;
 
@@ -307,16 +336,21 @@ function UnitLesson({ unit, progress, onClose, award }) {
       onClose();
     } else {
       setIndex((current) => current + 1);
-      setShowMeaning(true);
+      setShowMeaning(false);
     }
+  };
+
+  const previous = () => {
+    setIndex((current) => Math.max(0, current - 1));
+    setShowMeaning(false);
   };
 
   return (
     <div className="lesson-overlay" role="dialog" aria-modal="true" aria-label={`${unit.title} lesson`}>
       <div className="lesson-shell">
         <header className="lesson-header">
-          <button className="icon-button" onClick={onClose} aria-label="Close lesson"><X size={21} /></button>
-          <div className="lesson-header-center"><span>UNIT {unit.number} · {unit.title}</span><div className="lesson-progress"><span style={{ width: `${((index + 1) / unit.phrases.length) * 100}%` }} /></div></div>
+          <button className="lesson-close" onClick={onClose} aria-label="Finish this lesson later"><X size={21} /><span>Finish later</span></button>
+          <div className="lesson-header-center"><span>UNIT {unit.number} · {unit.title}</span><div className="lesson-progress" role="progressbar" aria-label="Lesson progress" aria-valuemin="1" aria-valuemax={unit.phrases.length} aria-valuenow={index + 1}><span style={{ width: `${((index + 1) / unit.phrases.length) * 100}%` }} /></div></div>
           <span className="lesson-count">{index + 1} / {unit.phrases.length}</span>
         </header>
         <main className="lesson-main">
@@ -335,7 +369,10 @@ function UnitLesson({ unit, progress, onClose, award }) {
             <button className="slow-audio" onClick={() => speakPolish(phrase.polish, 0.58)}><Volume2 size={20} /><span><strong>Hear it slowly</strong><small>Catch every sound</small></span></button>
             <SpeechMiniPractice phrase={phrase} onSuccess={() => award({ xp: 3, phraseId: phrase.id }, "+3 XP · Nicely said")} />
           </div>
-          <button className="primary-button lesson-next" onClick={next}>{isLast ? "Finish unit" : "Got it — next phrase"}<ArrowRight size={19} /></button>
+          <div className="lesson-nav-actions">
+            <button className="secondary-button" onClick={previous} disabled={index === 0}><ArrowLeft size={18} /> Previous</button>
+            <button className="primary-button lesson-next" onClick={next}>{isLast ? "Finish unit" : "Got it — next phrase"}<ArrowRight size={19} /></button>
+          </div>
         </main>
       </div>
     </div>
@@ -386,8 +423,8 @@ function PracticeView({ progress, award }) {
   return (
     <div className="view-stack practice-page">
       <header className="page-header"><div><span className="eyebrow red"><Brain size={15} /> PRACTICE STUDIO</span><h1>Make it stick</h1><p>Choose a short drill. Every answer strengthens the Polish you will need in a real conversation.</p></div><div className="mastery-chip"><Trophy size={21} /><span><strong>{progress.totalReviews}</strong> reviews</span></div></header>
-      <div className="mode-tabs">
-        {modes.map(({ id, label, icon: Icon, hint }) => <button key={id} className={mode === id ? "active" : ""} onClick={() => setMode(id)}><Icon size={20} /><span><strong>{label}</strong><small>{hint}</small></span></button>)}
+      <div className="mode-tabs" role="tablist" aria-label="Practice mode">
+        {modes.map(({ id, label, icon: Icon, hint }) => <button key={id} role="tab" aria-selected={mode === id} className={mode === id ? "active" : ""} onClick={() => setMode(id)}><Icon size={20} /><span><strong>{label}</strong><small>{hint}</small></span></button>)}
       </div>
       {mode === "flashcards" && <Flashcards progress={progress} award={award} />}
       {mode === "listen" && <ListeningQuiz award={award} />}
@@ -412,25 +449,13 @@ function Flashcards({ progress, award }) {
   return (
     <section className="practice-stage">
       <div className="practice-topline"><span>Card {(index % deck.length) + 1} of {deck.length}</span><div className="mini-progress"><span style={{ width: `${(((index % deck.length) + 1) / deck.length) * 100}%` }} /></div><span>Polish → English</span></div>
-      <div
-        className={`flashcard ${flipped ? "flipped" : ""}`}
-        role="button"
-        tabIndex={0}
-        onClick={(event) => { if (!event.target.closest("button")) setFlipped(true); }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            setFlipped(true);
-          }
-        }}
-        aria-label={`${phrase.polish}. ${flipped ? phrase.english : "Reveal meaning"}`}
-      >
+      <article className={`flashcard ${flipped ? "flipped" : ""}`} aria-label={`Flashcard: ${phrase.polish}`}>
         <span className="flashcard-label">{flipped ? "ANSWER" : "WHAT DOES THIS MEAN?"}</span>
         <AudioButton text={phrase.polish} compact />
         <h2>{phrase.polish}</h2>
         <p className="phonetic large">{phrase.phonetic}</p>
-        {flipped ? <div className="flashcard-answer"><span>{phrase.english}</span>{phrase.tip && <small>{phrase.tip}</small>}</div> : <span className="tap-hint">Tap the card to reveal</span>}
-      </div>
+        {flipped ? <div className="flashcard-answer"><span>{phrase.english}</span>{phrase.tip && <small>{phrase.tip}</small>}</div> : <button className="flashcard-reveal" onClick={() => setFlipped(true)}>Reveal meaning</button>}
+      </article>
       {flipped && <div className="rating-row"><button className="again-button" onClick={() => rate(false)}><RotateCcw size={18} /> Again</button><button className="know-button" onClick={() => rate(true)}><Check size={19} /> I knew it</button></div>}
     </section>
   );
@@ -614,7 +639,7 @@ function GrammarView() {
 }
 
 function App() {
-  const [view, setView] = useState("home");
+  const [view, setView] = useState(() => viewFromHash(window.location.hash));
   const [progress, setProgress] = useState(loadProgress);
   const [activeUnit, setActiveUnit] = useState(null);
   const [toast, setToast] = useState("");
@@ -622,10 +647,33 @@ function App() {
 
   useEffect(() => saveProgress(progress), [progress]);
   useEffect(() => {
-    const handler = (event) => { if (event.key === "Escape") setActiveUnit(null); };
+    const handler = (event) => {
+      if (event.key === "Escape") {
+        setActiveUnit(null);
+        setNavOpen(false);
+      }
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+  useEffect(() => {
+    const syncView = () => setView(viewFromHash(window.location.hash));
+    window.addEventListener("hashchange", syncView);
+    window.addEventListener("popstate", syncView);
+    return () => {
+      window.removeEventListener("hashchange", syncView);
+      window.removeEventListener("popstate", syncView);
+    };
+  }, []);
+  useEffect(() => {
+    if (!window.location.hash) window.history.replaceState(null, "", "#home");
+  }, []);
+  useEffect(() => {
+    if (!navOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [navOpen]);
 
   const award = (payload, message) => {
     setProgress((current) => addStudy(current, payload));
@@ -637,6 +685,7 @@ function App() {
   };
 
   const navigate = (nextView) => {
+    if (window.location.hash !== `#${nextView}`) window.history.pushState(null, "", `#${nextView}`);
     setView(nextView);
     setNavOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -646,11 +695,11 @@ function App() {
 
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${navOpen ? "open" : ""}`}>
-        <div className="brand" onClick={() => navigate("home")} role="button" tabIndex="0"><span className="brand-mark">Cz</span><span><strong>Cześć!</strong><small>Polish for real life</small></span></div>
+      <aside id="main-sidebar" className={`sidebar ${navOpen ? "open" : ""}`} aria-label="Learning navigation">
+        <div className="sidebar-topline"><button className="brand" onClick={() => navigate("home")}><span className="brand-mark">Cz</span><span><strong>Cześć!</strong><small>Polish for real life</small></span></button><button className="sidebar-close icon-button" onClick={() => setNavOpen(false)} aria-label="Close navigation"><X size={21} /></button></div>
         <nav aria-label="Main navigation">
           <span className="nav-label">LEARN</span>
-          {NAV_ITEMS.map(({ id, label, icon: Icon }, index) => <button key={id} className={view === id ? "active" : ""} onClick={() => navigate(id)}><Icon size={20} /><span>{label}</span>{index === 2 && progress.totalReviews > 0 && <small className="nav-badge">{progress.totalReviews}</small>}</button>)}
+          {NAV_ITEMS.map(({ id, label, icon: Icon }, index) => <button key={id} className={view === id ? "active" : ""} aria-current={view === id ? "page" : undefined} onClick={() => navigate(id)}><Icon size={20} /><span>{label}</span>{index === 2 && progress.totalReviews > 0 && <small className="nav-badge">{progress.totalReviews}</small>}</button>)}
         </nav>
         <div className="sidebar-card">
           <div className="sidebar-card-top"><Flame size={23} /><span><strong>{effectiveStreak(progress)} day streak</strong><small>{effectiveStreak(progress) ? "Keep showing up" : "Start today"}</small></span></div>
@@ -662,7 +711,7 @@ function App() {
       {navOpen && <button className="nav-scrim" onClick={() => setNavOpen(false)} aria-label="Close navigation" />}
 
       <div className="app-main">
-        <header className="mobile-header"><button className="icon-button" onClick={() => setNavOpen(true)} aria-label="Open navigation"><Menu /></button><div className="mobile-brand"><span>Cz</span><strong>{currentLabel}</strong></div><span className="mobile-xp"><Zap size={16} /> {progress.xp}</span></header>
+        <header className="mobile-header"><button className="icon-button" onClick={() => setNavOpen(true)} aria-label="Open navigation" aria-expanded={navOpen} aria-controls="main-sidebar"><Menu /></button><div className="mobile-brand"><span>Cz</span><strong>{currentLabel}</strong></div><span className="mobile-xp"><Zap size={16} /> {progress.xp}</span></header>
         <main className="content">
           {view === "home" && <HomeView progress={progress} onNavigate={navigate} onOpenUnit={setActiveUnit} award={award} onSetGoal={(minutes) => setProgress((current) => ({ ...current, dailyGoal: minutes }))} />}
           {view === "course" && <CourseView progress={progress} onOpenUnit={setActiveUnit} />}
@@ -673,9 +722,9 @@ function App() {
         </main>
       </div>
 
-      <nav className="bottom-nav" aria-label="Mobile navigation">{NAV_ITEMS.slice(0, 5).map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "active" : ""} onClick={() => navigate(id)}><Icon size={20} /><span>{label}</span></button>)}</nav>
+      <nav className="bottom-nav" aria-label="Mobile navigation">{NAV_ITEMS.slice(0, 5).map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "active" : ""} aria-current={view === id ? "page" : undefined} onClick={() => navigate(id)}><Icon size={20} /><span>{label}</span></button>)}</nav>
       {activeUnit && <UnitLesson unit={activeUnit} progress={progress} onClose={() => setActiveUnit(null)} award={award} />}
-      {toast && <div className="toast"><Star size={17} fill="currentColor" /> {toast}</div>}
+      {toast && <div className="toast" role="status" aria-live="polite"><Star size={17} fill="currentColor" /> {toast}</div>}
     </div>
   );
 }
