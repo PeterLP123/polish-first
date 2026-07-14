@@ -1,8 +1,22 @@
-const CACHE_NAME = "polish-first-v1";
-const APP_SHELL = ["./", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
+const CACHE_NAME = "polish-first-v7";
+const APP_SHELL = ["./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
+
+async function cacheAppShell() {
+  const cache = await caches.open(CACHE_NAME);
+  const indexUrl = new URL("./", self.registration.scope).href;
+  const response = await fetch(indexUrl, { cache: "reload" });
+  await cache.put(indexUrl, response.clone());
+  const html = await response.text();
+  const assets = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+    .map((match) => new URL(match[1], indexUrl))
+    .filter((url) => url.origin === self.location.origin)
+    .map((url) => url.href);
+  const staticShell = APP_SHELL.map((path) => new URL(path, indexUrl).href);
+  await cache.addAll([...new Set([...staticShell, ...assets])]);
+}
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  event.waitUntil(cacheAppShell());
   self.skipWaiting();
 });
 
@@ -22,10 +36,10 @@ self.addEventListener("fetch", (event) => {
       fetch(event.request)
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put("./", copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put(new URL("./", self.registration.scope).href, copy));
           return response;
         })
-        .catch(() => caches.match("./")),
+        .catch(() => caches.match(new URL("./", self.registration.scope).href)),
     );
     return;
   }

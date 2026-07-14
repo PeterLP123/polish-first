@@ -1,3 +1,8 @@
+import { buildActivities } from "./content/activities.js";
+import { expansionDialogues, expansionGrammarGuides } from "./content/expansion-extras.js";
+import { expansionUnits } from "./content/expansion.js";
+import { makeContentCatalog, validateContentCatalog } from "./content/schema.js";
+
 const p = (polish, phonetic, english, tip = "") => ({ polish, phonetic, english, tip });
 
 const rawUnits = [
@@ -769,17 +774,29 @@ const slugify = (text) => text
   .replace(/[^a-z0-9]+/g, "-")
   .replace(/^-|-$/g, "");
 
-export const units = rawUnits.map((unit, unitIndex) => ({
-  ...unit,
-  id: unit.slug,
-  number: unitIndex + 1,
-  stage: unitIndex < 6 ? "Starter" : unitIndex < 14 ? "Everyday" : unitIndex < 23 ? "Explorer" : "Next steps",
-  phrases: unit.phrases.map((phrase) => ({
-    ...phrase,
-    id: `${unit.slug}-${slugify(phrase.polish)}`,
-    unitId: unit.slug,
-  })),
-}));
+const legacyUnits = rawUnits.map((unit, unitIndex) => {
+  const stage = unitIndex < 6 ? "Starter" : unitIndex < 14 ? "Everyday" : unitIndex < 23 ? "Explorer" : "Next steps";
+  return {
+    ...unit,
+    id: unit.slug,
+    number: unitIndex + 1,
+    stage,
+    phrases: unit.phrases.map((phrase) => ({
+      ...phrase,
+      id: `${unit.slug}-${slugify(phrase.polish)}`,
+      unitId: unit.slug,
+      stage,
+      topic: unit.topic,
+      skills: ["recall", "listening", "speaking"],
+      grammarIds: [],
+    })),
+  };
+});
+
+export const units = [
+  ...legacyUnits,
+  ...expansionUnits.map((unit, index) => ({ ...unit, number: legacyUnits.length + index + 1 })),
+];
 
 export const allPhrases = units.flatMap((unit) => unit.phrases);
 export const courseTopics = ["All", ...new Set(units.map((unit) => unit.topic))];
@@ -789,7 +806,7 @@ export const courseTopics = ["All", ...new Set(units.map((unit) => unit.topic))]
 // their phrases keep their relative positions. Append new content freely; if old
 // content must move, freeze this map to literal values first.
 export const legacyIdMap = Object.fromEntries(
-  units.flatMap((unit, unitIndex) => [
+  legacyUnits.flatMap((unit, unitIndex) => [
     [`unit-${unitIndex + 1}`, unit.id],
     ...unit.phrases.map((phrase, phraseIndex) => [`u${unitIndex + 1}-p${phraseIndex + 1}`, phrase.id]),
   ]),
@@ -1354,7 +1371,7 @@ const advancedDialogues = [
   },
 ];
 
-export const dialogues = [
+const legacyDialogues = [
   ...coreDialogues.map((dialogue) => {
     const extension = dialogueExtensions[dialogue.id];
     return {
@@ -1368,7 +1385,9 @@ export const dialogues = [
   ...advancedDialogues,
 ];
 
-export const grammarGuides = [
+export const dialogues = [...legacyDialogues, ...expansionDialogues];
+
+const legacyGrammarGuides = [
   { title: "A sentence without ‘I’", example: "(Ja) mówię po polsku", meaning: "I speak Polish", body: "The verb ending carries the person, so ja is usually optional. Use it for contrast or emphasis." },
   { title: "Make it negative", example: "Rozumiem → Nie rozumiem", meaning: "I understand → I don't understand", body: "Put nie immediately before the verb. Unlike English, you need no extra helper word." },
   { title: "Ask a yes/no question", example: "Czy mówisz po polsku?", meaning: "Do you speak Polish?", body: "Put czy at the start. The rest of the sentence can stay in its normal order." },
@@ -1400,3 +1419,29 @@ export const grammarGuides = [
   { title: "If opens a possibility", example: "Jeśli będzie ładnie…", meaning: "If the weather is nice…", body: "Jeśli starts a real condition. Follow it with the situation, then the result: jeśli mam czas, idę; jeśli będzie ciepło, pojedziemy." },
   { title: "Finished or in progress", example: "robiłem · zrobiłem", meaning: "I was doing · I completed", body: "Polish often uses paired verbs to distinguish an activity from a completed result. Start with common pairs such as robić / zrobić and czytać / przeczytać." },
 ];
+
+export const grammarGuides = [
+  ...legacyGrammarGuides.map((guide) => ({ ...guide, id: `grammar-${slugify(guide.title)}` })),
+  ...expansionGrammarGuides,
+];
+
+export const { readings, writingItems, clozeItems, milestones } = buildActivities(units, dialogues, grammarGuides);
+
+const catalogSounds = soundLessons.map((lesson, index) => ({ ...lesson, id: `sound-${index + 1}-${slugify(lesson.sound)}` }));
+const catalogDialogues = dialogues.map((dialogue) => ({ ...dialogue, id: `dialogue:${dialogue.id}`, dialogueId: dialogue.id }));
+
+export const ContentCatalog = makeContentCatalog({
+  units,
+  phrases: allPhrases,
+  dialogues: catalogDialogues,
+  soundLessons: catalogSounds,
+  grammarGuides,
+  readings,
+  writingItems,
+  clozeItems,
+  milestones,
+});
+
+export function validateCourseContent(expected = {}) {
+  return validateContentCatalog(ContentCatalog, expected);
+}

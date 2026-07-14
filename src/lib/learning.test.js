@@ -14,14 +14,21 @@ import {
   masterySummary,
   migrateProgress,
   normalisePolish,
+  nextRecommendation,
   parseProgressImport,
+  recordAttempt,
+  recordMilestoneResult,
   ratePhrase,
+  scoreCloze,
+  scoreReading,
+  scoreWriting,
   serializeProgress,
+  skillLabel,
   similarity,
   todayMinutes,
   weekActivity,
 } from "./learning.js";
-import { allPhrases, units } from "../data/course.js";
+import { ContentCatalog, allPhrases, clozeItems, milestones, readings, units, writingItems } from "../data/course.js";
 
 const NOW = new Date(2026, 6, 14, 12);
 
@@ -155,9 +162,76 @@ describe("learning helpers", () => {
   it("round-trips progress exports and migrates older exports", () => {
     const progress = { ...baseProgress(), xp: 42, learnedPhrases: [allPhrases[0].id] };
     const exported = serializeProgress(progress, NOW);
-    expect(parseProgressImport(exported, NOW)).toMatchObject({ version: 4, xp: 42, learnedPhrases: [allPhrases[0].id] });
+    expect(parseProgressImport(exported, NOW)).toMatchObject({ version: 5, xp: 42, learnedPhrases: [allPhrases[0].id] });
     const old = JSON.stringify({ app: "polish-first", schemaVersion: 3, progress: { version: 3, completedUnits: [], learnedPhrases: [allPhrases[0].id], phraseStats: {} } });
     expect(parseProgressImport(old, NOW).phraseStats[allPhrases[0].id].dueDate).toBe("2026-07-14");
+  });
+
+  it("adds v5 analytics without changing v4 learning state", () => {
+    const v4 = { ...baseProgress(), version: 4, xp: 55, completedUnits: [units[0].id], analyticsSince: undefined, skillStats: undefined, dailyStats: undefined, milestoneStats: undefined };
+    const migrated = migrateProgress(v4, NOW);
+    expect(migrated).toMatchObject({ version: 5, xp: 55, completedUnits: [units[0].id], analyticsSince: "2026-07-14", skillStats: {}, dailyStats: [], milestoneStats: {} });
+  });
+
+  it("aggregates scored attempts without storing raw events", () => {
+    const event = { itemId: allPhrases[0].id, skill: "recall", mode: "flashcards", score: 0.8, occurredAt: NOW.toISOString() };
+    const once = recordAttempt(baseProgress(), event);
+    const twice = recordAttempt(once, { ...event, score: 1 });
+    expect(twice.skillStats[allPhrases[0].id].recall).toMatchObject({ attempts: 2, points: 1.8, lastScore: 1 });
+    expect(twice.dailyStats[0].skills.recall).toEqual({ attempts: 2, points: 1.8 });
+    expect(twice).not.toHaveProperty("attempts");
+    expect(() => recordAttempt(baseProgress(), { ...event, score: 2 })).toThrow("between 0 and 1");
+  });
+
+  it("keeps only the latest 180 daily summaries", () => {
+    let progress = baseProgress();
+    for (let day = 0; day < 181; day += 1) {
+      const occurredAt = new Date(2026, 0, 1 + day, 12).toISOString();
+      progress = recordAttempt(progress, { itemId: allPhrases[0].id, skill: "recall", mode: "flashcards", score: 1, occurredAt });
+    }
+    expect(progress.dailyStats).toHaveLength(180);
+    expect(progress.dailyStats[0].date).toBe("2026-01-02");
+  });
+
+  it("scores reading, controlled writing, and cloze tasks deterministically", () => {
+    const reading = readings[0];
+    expect(scoreReading(reading, reading.questions.map((question) => question.answerIndex))).toBe(1);
+    expect(scoreWriting(writingItems[0], writingItems[0].acceptedAnswers[0])).toBe(1);
+    expect(scoreWriting(writingItems[0], "unrelated text")).toBe(0);
+    expect(scoreCloze(clozeItems[0], clozeItems[0].acceptedAnswers[0])).toBe(1);
+  });
+
+  it("uses exact skill boundaries and deterministic recommendations", () => {
+    expect(skillLabel(4, 1)).toBe("Not enough evidence");
+    expect(skillLabel(5, 0.59)).toBe("Needs focus");
+    expect(skillLabel(5, 0.6)).toBe("Developing");
+    expect(skillLabel(5, 0.8)).toBe("Strong");
+    expect(nextRecommendation(baseProgress(), NOW)).toMatchObject({ kind: "unit", unitId: units[0].id });
+    const due = { ...baseProgress(), learnedPhrases: [allPhrases[0].id], phraseStats: { [allPhrases[0].id]: stat("2026-07-14", 1) } };
+    expect(nextRecommendation(due, NOW)).toMatchObject({ kind: "practice", mode: "flashcards", itemIds: [allPhrases[0].id] });
+  });
+
+  it("records milestone retries and never revokes the first pass", () => {
+    const milestone = milestones[0];
+    let progress = recordMilestoneResult(baseProgress(), milestone.id, Array(9).fill(0.8), "good", NOW);
+    expect(progress.milestoneStats[milestone.id]).toMatchObject({ attempts: 1, bestAutoScore: 0.8, passedAt: NOW.toISOString() });
+    progress = recordMilestoneResult(progress, milestone.id, Array(9).fill(0.2), "again", new Date(2026, 6, 15, 12));
+    expect(progress.milestoneStats[milestone.id]).toMatchObject({ attempts: 2, bestAutoScore: 0.8, lastAutoScore: 0.2, passedAt: NOW.toISOString() });
+  });
+
+  it("keeps the fully populated raw progress export below one megabyte", () => {
+    const aggregate = { attempts: 9999, points: 9999, lastScore: 1, lastAttempted: NOW.toISOString() };
+    const skillStats = Object.fromEntries([...ContentCatalog.byId]
+      .filter(([, item]) => item.skills?.length)
+      .map(([id, item]) => [id, Object.fromEntries(item.skills.map((skill) => [skill, aggregate]))]));
+    const phraseStats = Object.fromEntries(allPhrases.map((phrase) => [phrase.id, { intervalDays: 90, dueDate: "2026-10-12", lastReviewed: "2026-07-14", reviews: 9999, lapses: 999, lastRating: "easy" }]));
+    const dailyStats = Array.from({ length: 180 }, (_, index) => ({
+      date: addDays("2026-01-01", index), minutes: 999, newItems: 99, reviews: 999,
+      skills: Object.fromEntries(["recall", "listening", "speaking", "reading", "writing", "grammar"].map((skill) => [skill, { attempts: 999, points: 999 }])),
+    }));
+    const milestoneStats = Object.fromEntries(milestones.map((milestone) => [milestone.id, { attempts: 999, lastAutoScore: 1, bestAutoScore: 1, lastAttempted: NOW.toISOString(), lastSpeakingRating: "easy", passedAt: NOW.toISOString() }]));
+    const fixture = { ...baseProgress(), learnedPhrases: allPhrases.map((phrase) => phrase.id), phraseStats, skillStats, dailyStats, milestoneStats };
+    expect(new Blob([serializeProgress(fixture, NOW)]).size).toBeLessThan(1_000_000);
   });
 
   it("rejects invalid, future, and unknown-content imports", () => {
@@ -166,6 +240,8 @@ describe("learning helpers", () => {
     expect(() => parseProgressImport({ app: "polish-first", schemaVersion: 99, progress: {} }, NOW)).toThrow("newer app version");
     expect(() => parseProgressImport({ app: "polish-first", schemaVersion: 4, progress: { ...baseProgress(), learnedPhrases: ["missing"] } }, NOW)).toThrow("does not recognise");
     expect(() => parseProgressImport({ app: "polish-first", schemaVersion: 4, progress: { ...baseProgress(), activeSession: { tasks: [{ type: "dialogue", dialogueId: "missing" }] } } }, NOW)).toThrow("does not recognise");
+    expect(() => parseProgressImport({ app: "polish-first", schemaVersion: 5, progress: { ...baseProgress(), skillStats: { missing: { recall: { attempts: 1, points: 1, lastScore: 1 } } } } }, NOW)).toThrow("does not recognise");
+    expect(() => parseProgressImport({ app: "polish-first", schemaVersion: 5, progress: { ...baseProgress(), dailyStats: Array(181).fill({ date: "2026-01-01", minutes: 0, newItems: 0, reviews: 0, skills: {} }) } }, NOW)).toThrow("too many daily analytics");
   });
 
   it("creates a privacy-safe diagnostics summary", () => {
@@ -195,5 +271,9 @@ function baseProgress() {
     dailyGoal: 15,
     todayMinutes: 0,
     totalReviews: 0,
+    analyticsSince: "2026-07-14",
+    skillStats: {},
+    dailyStats: [],
+    milestoneStats: {},
   };
 }

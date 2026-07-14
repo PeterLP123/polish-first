@@ -22,7 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 import { allPhrases, courseTopics, grammarGuides, soundLessons, units } from "./data/course.js";
-import { addStudy, buildDailySession, currentSession, effectiveStreak, getDuePhrases, loadProgress, localDate, masterySummary, recordDialogue, saveProgress, todayMinutes } from "./lib/learning.js";
+import { addStudy, buildDailySession, currentSession, effectiveStreak, getDuePhrases, loadProgress, localDate, masterySummary, recordAttempt, recordDialogue, recordMilestoneResult, saveProgress, scoreForRating, todayMinutes } from "./lib/learning.js";
 import { viewFromHash } from "./lib/navigation.js";
 import { listenForPolish, speakPolish } from "./lib/speech.js";
 import DialoguesPage from "./components/DialoguesView.jsx";
@@ -364,7 +364,8 @@ function GrammarView() {
 }
 
 function App() {
-  const [view, setView] = useState(() => viewFromHash(window.location.hash));
+  const [route, setRoute] = useState(() => viewFromHash(window.location.hash));
+  const view = route.view;
   const [progress, setProgress] = useState(loadProgress);
   const [activeUnit, setActiveUnit] = useState(null);
   const [toast, setToast] = useState("");
@@ -383,7 +384,7 @@ function App() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
   useEffect(() => {
-    const syncView = () => setView(viewFromHash(window.location.hash));
+    const syncView = () => setRoute(viewFromHash(window.location.hash));
     window.addEventListener("hashchange", syncView);
     window.addEventListener("popstate", syncView);
     return () => {
@@ -419,9 +420,12 @@ function App() {
     }
   };
 
-  const navigate = (nextView) => {
-    if (window.location.hash !== `#${nextView}`) window.history.pushState(null, "", `#${nextView}`);
-    setView(nextView);
+  const navigate = (nextView, practice = null) => {
+    const hash = nextView === "practice" && practice
+      ? `#practice?mode=${encodeURIComponent(practice.mode ?? "flashcards")}&topic=${encodeURIComponent(practice.topic ?? "All")}`
+      : `#${nextView}`;
+    if (window.location.hash !== hash) window.history.pushState(null, "", hash);
+    setRoute(viewFromHash(hash));
     setNavOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -441,6 +445,9 @@ function App() {
         next = addStudy(next, { xp: result.xp, minutes: result.minutes, phraseId: task.phraseId, introduction: true });
       } else if (result.kind === "review") {
         next = addStudy(next, { xp: result.xp, minutes: result.minutes, phraseId: task.phraseId, review: true, rating: result.rating });
+        const modes = { flashcard: ["recall", "flashcards"], listening: ["listening", "listen"], builder: ["recall", "builder"], speaking: ["speaking", "speak"] };
+        const [skill, mode] = modes[task.mode] ?? ["recall", "flashcards"];
+        next = recordAttempt(next, { itemId: task.phraseId, skill, mode, score: scoreForRating(result.rating), occurredAt: new Date().toISOString() });
       } else if (result.kind === "dialogue") {
         next = addStudy(next, { xp: result.xp, minutes: result.minutes });
         next = recordDialogue(next, task.dialogueId, result.mistakes);
@@ -475,6 +482,15 @@ function App() {
     setToast(`Scene complete · ${mistakes ? `${mistakes} useful retries` : "no retries"}`);
   };
 
+  const recordPracticeAttempt = (itemId, skill, mode, score) => {
+    setProgress((current) => recordAttempt(current, { itemId, skill, mode, score, occurredAt: new Date().toISOString() }));
+  };
+
+  const completeMilestone = (milestoneId, autoScores, speakingRating) => {
+    setProgress((current) => recordMilestoneResult(current, milestoneId, autoScores, speakingRating));
+    setToast("Scenario check saved");
+  };
+
   const currentLabel = view === "session" ? "Daily session" : NAV_ITEMS.find((item) => item.id === view)?.label;
 
   return (
@@ -489,11 +505,11 @@ function App() {
           {view === "home" && <HomeView progress={progress} onNavigate={navigate} onOpenUnit={setActiveUnit} award={award} onSetGoal={(minutes) => setProgress((current) => ({ ...current, dailyGoal: minutes }))} onStartSession={() => startSession(false)} />}
           {view === "session" && <GuidedSession session={progress.activeSession} onCommit={commitSessionTask} onExit={() => navigate("home")} onRestart={() => startSession(true)} upcomingDue={getDuePhrases(progress).length} />}
           {view === "course" && <CourseView progress={progress} onOpenUnit={setActiveUnit} />}
-          {view === "practice" && <PracticePage progress={progress} award={award} />}
+          {view === "practice" && <PracticePage progress={progress} award={award} onAttempt={recordPracticeAttempt} initialMode={route.practice.mode} initialTopic={route.practice.topic} />}
           {view === "sounds" && <SoundsView award={award} />}
           {view === "dialogues" && <DialoguesPage progress={progress} onCorrect={() => award({ xp: 10, minutes: 1 }, "+10 XP · Natural response")} onCompleteDialogue={completeDialogue} />}
           {view === "grammar" && <GrammarView />}
-          {view === "data" && <ProgressDataView progress={progress} onReplaceProgress={setProgress} />}
+          {view === "data" && <ProgressDataView progress={progress} onReplaceProgress={setProgress} onNavigatePractice={(mode, topic) => navigate("practice", { mode, topic })} onOpenUnit={(unit) => setActiveUnit(unit)} onCompleteMilestone={completeMilestone} onAttempt={recordPracticeAttempt} />}
         </main>
       </div>
 

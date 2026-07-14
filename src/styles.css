@@ -258,6 +258,72 @@ button { cursor: pointer; }
 .session-empty p { color: var(--muted); line-height: 1.6; }
 
 .srs-rating-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+
+.practice-filter { align-self: flex-end; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.practice-filter select { min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); padding: 8px 34px 8px 12px; }
+.text-practice { display: grid; gap: 16px; }
+.text-practice h2 { line-height: 1.55; }
+.text-practice fieldset, .dialogue-check fieldset { display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 13px; padding: 14px; text-align: left; background: var(--paper); }
+.text-practice legend, .dialogue-check legend { padding: 0 6px; font-weight: 700; }
+.text-practice label, .dialogue-check label { display: flex; gap: 8px; align-items: flex-start; line-height: 1.45; }
+.text-practice > label { display: grid; gap: 7px; font-weight: 700; }
+.text-practice input:not([type="radio"]), .text-practice textarea { width: 100%; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); padding: 12px; resize: vertical; }
+.mode-tabs { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.mode-tabs button { padding-inline: 10px; }
+
+.next-action { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 22px; }
+.next-action-icon { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 15px; color: var(--red-dark); background: var(--red-soft); }
+.next-action h2 { margin: 5px 0 4px; }
+.next-action p { margin: 0; color: var(--muted); }
+.skill-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-top: 13px; }
+.skill-card { padding: 17px; display: flex; flex-direction: column; gap: 5px; }
+.skill-card > span { color: var(--muted); font-size: 11px; text-transform: capitalize; }
+.skill-card strong { font: 800 24px "Manrope"; }
+.skill-card small { color: var(--muted); line-height: 1.4; }
+.insight-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 15px; }
+.trend-card, .forecast-card, .topic-panel { padding: 22px; }
+.trend-visual svg { width: 100%; height: 150px; margin-top: 15px; overflow: visible; }
+.trend-visual line { stroke: var(--line); stroke-width: 2; }
+.trend-visual polyline { fill: none; stroke: var(--red); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.trend-visual span, .trend-card p, .forecast-card p { color: var(--muted); font-size: 11px; }
+.forecast-bars { height: 150px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; margin-top: 15px; }
+.forecast-bars > div { height: 100%; display: grid; grid-template-rows: 1fr auto auto; align-items: end; justify-items: center; gap: 4px; }
+.forecast-bars span { width: 70%; min-height: 4px; border-radius: 6px 6px 2px 2px; background: var(--navy); }
+.forecast-bars strong { font-size: 11px; }
+.forecast-bars small { color: var(--muted); font-size: 9px; }
+.table-scroll { overflow-x: auto; margin-top: 12px; }
+.topic-panel table { width: 100%; border-collapse: collapse; text-align: left; }
+.topic-panel th, .topic-panel td { padding: 11px; border-bottom: 1px solid var(--line); }
+.topic-panel thead th { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+.milestone-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 13px; }
+.milestone-card { padding: 19px; }
+.milestone-card > span { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.milestone-card.passed { border-color: #9ac2b1; background: #f2faf7; }
+.milestone-card h3 { margin: 8px 0 5px; }
+.milestone-card p { min-height: 36px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.milestone-runner { position: fixed; z-index: 200; inset: 3vh max(3vw, calc((100vw - 1000px) / 2)); overflow-y: auto; padding: 30px; box-shadow: 0 20px 70px rgba(31, 35, 33, .28); }
+.milestone-close { position: absolute; top: 18px; right: 18px; }
+.milestone-runner > .practice-topline { margin: 18px 50px 5px 0; }
+.milestone-task { max-width: 760px; margin: 25px auto; display: grid; gap: 16px; }
+.milestone-task > .primary-button { justify-self: end; }
+.dialogue-check fieldset { margin-bottom: 8px; }
+.speaking-check { justify-items: center; text-align: center; }
+.milestone-speaking-phrase { font: 800 clamp(30px, 5vw, 50px) "Manrope"; margin: 20px 0 0; }
+.milestone-result { min-height: 400px; display: grid; place-content: center; justify-items: center; text-align: center; }
+.milestone-result > div { display: flex; gap: 10px; }
+
+@media (max-width: 1050px) {
+  .mode-tabs { grid-template-columns: repeat(4, 1fr); }
+  .skill-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .mode-tabs { grid-template-columns: repeat(2, 1fr); }
+  .skill-grid, .milestone-grid, .insight-grid { grid-template-columns: 1fr; }
+  .next-action { grid-template-columns: auto 1fr; }
+  .next-action > button { grid-column: 1 / -1; }
+  .milestone-runner { inset: 1vh 2vw; padding: 22px 15px; }
+}
 .srs-rating-row button { min-height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
 .srs-rating-row strong { font-size: 12px; }
 .srs-rating-row small { color: var(--muted); font-size: 9px; }

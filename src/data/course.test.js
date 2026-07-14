@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allPhrases, courseTopics, dialogues, grammarGuides, legacyIdMap, soundLessons, units } from "./course.js";
+import { ContentCatalog, allPhrases, clozeItems, courseTopics, dialogues, grammarGuides, legacyIdMap, milestones, readings, soundLessons, units, validateCourseContent, writingItems } from "./course.js";
 
 describe("course data integrity", () => {
   it("gives every unit a unique slug id", () => {
@@ -17,7 +17,7 @@ describe("course data integrity", () => {
   it("maps every v1 positional id to a real slug id", () => {
     const unitIds = new Set(units.map((unit) => unit.id));
     const phraseIds = new Set(allPhrases.map((phrase) => phrase.id));
-    expect(Object.keys(legacyIdMap)).toHaveLength(units.length + allPhrases.length);
+    expect(Object.keys(legacyIdMap)).toHaveLength(395);
     Object.entries(legacyIdMap).forEach(([legacy, id]) => {
       expect(legacy).toMatch(/^(unit-\d+|u\d+-p\d+)$/);
       expect(unitIds.has(id) || phraseIds.has(id)).toBe(true);
@@ -25,11 +25,15 @@ describe("course data integrity", () => {
   });
 
   it("ships a substantial, consistently tagged curriculum", () => {
-    expect(units.length).toBeGreaterThanOrEqual(33);
-    expect(allPhrases.length).toBeGreaterThanOrEqual(362);
-    expect(dialogues.length).toBeGreaterThanOrEqual(16);
-    expect(soundLessons.length).toBeGreaterThanOrEqual(24);
-    expect(grammarGuides.length).toBeGreaterThanOrEqual(30);
+    expect(units).toHaveLength(57);
+    expect(allPhrases).toHaveLength(650);
+    expect(dialogues).toHaveLength(30);
+    expect(soundLessons).toHaveLength(24);
+    expect(grammarGuides).toHaveLength(42);
+    expect(readings).toHaveLength(24);
+    expect(writingItems).toHaveLength(24);
+    expect(clozeItems).toHaveLength(42);
+    expect(milestones).toHaveLength(6);
     expect(courseTopics).toContain("All");
     units.forEach((unit) => {
       expect(unit.topic).toBeTruthy();
@@ -37,6 +41,22 @@ describe("course data integrity", () => {
       expect(unit.grammar).toBeTruthy();
       expect(unit.phrases.length).toBeGreaterThanOrEqual(9);
     });
+  });
+
+  it("builds one validated production catalogue with globally unique ids", () => {
+    expect(ContentCatalog.byId.size).toBe(57 + 650 + 30 + 24 + 42 + 24 + 24 + 42 + 6);
+    expect(() => validateCourseContent({ units: 57, phrases: 650, dialogues: 30, soundLessons: 24, grammarGuides: 42, readings: 24, writingItems: 24, milestones: 6 })).not.toThrow();
+  });
+
+  it("gives every expansion unit exactly one reading or writing activity", () => {
+    for (const unit of units.slice(33)) {
+      const activities = readings.filter((item) => item.unitId === unit.id).length + writingItems.filter((item) => item.unitId === unit.id).length;
+      expect(activities).toBe(1);
+    }
+    for (const stage of ["Independent", "A2 bridge"]) {
+      expect(readings.filter((item) => item.stage === stage)).toHaveLength(6);
+      expect(writingItems.filter((item) => item.stage === stage)).toHaveLength(6);
+    }
   });
 
   it("gives every dialogue five turns with multiple natural options", () => {

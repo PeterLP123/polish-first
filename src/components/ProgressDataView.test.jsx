@@ -6,6 +6,14 @@ import { DEFAULT_PROGRESS, serializeProgress } from "../lib/learning.js";
 import ProgressDataView from "./ProgressDataView.jsx";
 
 describe("progress data tools", () => {
+  it("turns the fresh-learner recommendation into the first unit action", () => {
+    const onOpenUnit = vi.fn();
+    render(<ProgressDataView progress={DEFAULT_PROGRESS} onReplaceProgress={vi.fn()} onOpenUnit={onOpenUnit} />);
+    expect(screen.getByText(/Continue with Unit 1/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^start$/i }));
+    expect(onOpenUnit).toHaveBeenCalledWith(expect.objectContaining({ number: 1 }));
+  });
+
   it("previews and confirms a valid import", async () => {
     const onReplace = vi.fn();
     const imported = { ...DEFAULT_PROGRESS, xp: 123 };
@@ -17,7 +25,7 @@ describe("progress data tools", () => {
     expect(await screen.findByRole("heading", { name: /replace current progress/i })).toBeInTheDocument();
     expect(screen.getByText(/123 XP/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /confirm import/i }));
-    expect(onReplace).toHaveBeenCalledWith(expect.objectContaining({ xp: 123, version: 4 }));
+    expect(onReplace).toHaveBeenCalledWith(expect.objectContaining({ xp: 123, version: 5 }));
   });
 
   it("rejects invalid files without replacing progress", async () => {
