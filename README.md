@@ -13,13 +13,13 @@ Open the local address Vite prints, normally [http://localhost:5173](http://loca
 
 ## Included
 
-- 143 useful words and phrases across 14 everyday conversation units
+- 290 useful words and phrases across 27 practical conversation units
 - Polish audio through the browser's `pl-PL` speech voice
 - English-friendly pronunciation guides with marked word stress
 - Optional microphone practice and approximate speech-match feedback
-- Six branching dialogues for cafés, introductions, directions, restaurants, train tickets, and the pharmacy
+- Twelve branching dialogues covering cafés, introductions, directions, restaurants, travel, health, shopping, invitations, and home problems
 - Flashcard, listening, sentence-building, and speaking drills that prioritise your weakest phrases
-- Eighteen Polish sound lessons and fourteen beginner grammar explainers
+- Twenty-two Polish sound lessons and twenty-four beginner grammar explainers
 - XP, streaks, an adjustable daily goal, weekly activity, and per-phrase review strength saved in `localStorage`
 - Responsive desktop, tablet, and mobile layouts
 
