@@ -25,11 +25,11 @@ describe("course data integrity", () => {
   });
 
   it("ships a substantial, consistently tagged curriculum", () => {
-    expect(units.length).toBeGreaterThanOrEqual(27);
-    expect(allPhrases.length).toBeGreaterThanOrEqual(290);
-    expect(dialogues.length).toBeGreaterThanOrEqual(12);
-    expect(soundLessons.length).toBeGreaterThanOrEqual(22);
-    expect(grammarGuides.length).toBeGreaterThanOrEqual(24);
+    expect(units.length).toBeGreaterThanOrEqual(33);
+    expect(allPhrases.length).toBeGreaterThanOrEqual(362);
+    expect(dialogues.length).toBeGreaterThanOrEqual(16);
+    expect(soundLessons.length).toBeGreaterThanOrEqual(24);
+    expect(grammarGuides.length).toBeGreaterThanOrEqual(30);
     expect(courseTopics).toContain("All");
     units.forEach((unit) => {
       expect(unit.topic).toBeTruthy();
@@ -39,12 +39,17 @@ describe("course data integrity", () => {
     });
   });
 
-  it("gives each dialogue a useful correct and incorrect choice", () => {
+  it("gives every dialogue five turns with multiple natural options", () => {
     expect(new Set(dialogues.map((dialogue) => dialogue.id)).size).toBe(dialogues.length);
     dialogues.forEach((dialogue) => {
-      expect(dialogue.lines.length).toBeGreaterThanOrEqual(3);
+      expect(dialogue.lines.length).toBeGreaterThanOrEqual(5);
       dialogue.lines.forEach((line) => {
-        expect(line.choices.some((choice) => choice.good)).toBe(true);
+        expect([line.polish, line.phonetic, line.english].every(Boolean)).toBe(true);
+        expect(line.choices.length).toBeGreaterThanOrEqual(3);
+        line.choices.forEach((choice) => {
+          expect([choice.polish, choice.phonetic, choice.english].every(Boolean)).toBe(true);
+        });
+        expect(line.choices.filter((choice) => choice.good).length).toBeGreaterThanOrEqual(2);
         expect(line.choices.some((choice) => !choice.good)).toBe(true);
       });
     });

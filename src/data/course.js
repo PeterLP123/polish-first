@@ -615,6 +615,150 @@ const rawUnits = [
     ],
     grammar: "Weather often uses jest plus an adverb: jest ciepło, zimno, słonecznie. For rain and snow Polish simply says pada — it is falling.",
   },
+  {
+    title: "Send and collect a parcel",
+    slug: "post-office",
+    topic: "Daily life",
+    eyebrow: "Daily life 06",
+    description: "Buy stamps, send a tracked parcel, and collect a delivery from the post office.",
+    icon: "📦",
+    time: 21,
+    phrases: [
+      p("Chciałbym wysłać paczkę", "HYOW-bim VIH-swath PAHCH-keh", "I'd like to send a parcel (male speaker)"),
+      p("Chciałabym wysłać paczkę", "hyow-AH-bim VIH-swath PAHCH-keh", "I'd like to send a parcel (female speaker)"),
+      p("Do Wielkiej Brytanii", "doh VYEL-kyey brih-TAH-nyee", "To the United Kingdom"),
+      p("Ile waży ta paczka?", "EE-leh VAH-zhih tah PAHCH-kah", "How much does this parcel weigh?"),
+      p("Proszę wysłać priorytetem", "PROH-sheh VIH-swath pree-oh-RIH-teh-tem", "Please send it priority"),
+      p("Poproszę list polecony", "poh-PROH-sheh leest poh-leh-TSOH-nih", "A registered letter, please"),
+      p("Potrzebuję koperty i znaczka", "poh-tsheh-BOO-yeh koh-PEHR-tih ee ZNACH-kah", "I need an envelope and a stamp"),
+      p("Proszę wypełnić ten formularz", "PROH-sheh vih-PEW-neetch ten for-MOO-lahsh", "Please fill in this form"),
+      p("Kiedy paczka dotrze?", "KYEH-dih PAHCH-kah DOH-tsheh", "When will the parcel arrive?"),
+      p("Czy dostanę numer śledzenia?", "chih doh-STAH-neh NOO-mehr shle-JEN-yah", "Will I get a tracking number?"),
+      p("Chcę odebrać paczkę", "htseh oh-DEH-bratch PAHCH-keh", "I want to collect a parcel"),
+      p("Czy jest paczka dla mnie?", "chih yest PAHCH-kah dlah mnyeh", "Is there a parcel for me?"),
+    ],
+    grammar: "Wysłać and odebrać are a useful opposite pair: send and collect. Do introduces the destination, while dla introduces the recipient: do Anglii, dla mnie.",
+  },
+  {
+    title: "Use a bank and cash machine",
+    slug: "bank-money",
+    topic: "Daily life",
+    eyebrow: "Daily life 07",
+    description: "Withdraw cash, exchange money, report a card problem, and ask about fees.",
+    icon: "🏦",
+    time: 22,
+    phrases: [
+      p("Gdzie jest najbliższy bankomat?", "g-jyeh yest nay-BLEESH-shih ban-KOH-mat", "Where is the nearest cash machine?"),
+      p("Chcę wypłacić gotówkę", "htseh vih-PWAH-cheetch goh-TOOF-keh", "I want to withdraw cash"),
+      p("Chcę wpłacić pieniądze", "htseh VPWAH-cheetch pyeh-NYON-dzeh", "I want to deposit money"),
+      p("Bankomat zatrzymał moją kartę", "ban-KOH-mat zah-TSHIH-maw MOH-yong KAR-teh", "The cash machine kept my card"),
+      p("Zablokowałem kartę", "zah-bloh-koh-VAH-wem KAR-teh", "I blocked my card (male speaker)"),
+      p("Zablokowałam kartę", "zah-bloh-koh-VAH-wam KAR-teh", "I blocked my card (female speaker)"),
+      p("Jaki jest kurs wymiany?", "YAH-kee yest koors vih-MYAH-nih", "What is the exchange rate?"),
+      p("Chcę wymienić funty na złote", "htseh vih-MYEH-neetch FOON-tih nah ZWOH-teh", "I want to exchange pounds for zloty"),
+      p("Czy jest prowizja?", "chih yest proh-VEE-zyah", "Is there a fee?"),
+      p("Chciałbym otworzyć konto", "HYOW-bim ot-VOH-zhitch KON-toh", "I'd like to open an account (male speaker)"),
+      p("Proszę podpisać tutaj", "PROH-sheh pot-PEE-satch TOO-tie", "Please sign here"),
+      p("Potrzebuję potwierdzenia", "poh-tsheh-BOO-yeh pot-fyehr-JEN-yah", "I need confirmation / a receipt"),
+    ],
+    grammar: "Small prefixes change the direction of money: wypłacić is take out, wpłacić is put in. The same wy- / w- contrast appears in many practical verbs.",
+  },
+  {
+    title: "Rent a car and drive",
+    slug: "car-driving",
+    topic: "Travel",
+    eyebrow: "Travel 04",
+    description: "Rent the right car, ask about insurance and fuel, and handle a roadside problem.",
+    icon: "🚗",
+    time: 24,
+    phrases: [
+      p("Chciałbym wynająć samochód", "HYOW-bim vih-NAH-yonch sah-MOH-hoot", "I'd like to rent a car (male speaker)"),
+      p("Chciałabym wynająć samochód", "hyow-AH-bim vih-NAH-yonch sah-MOH-hoot", "I'd like to rent a car (female speaker)"),
+      p("Mam brytyjskie prawo jazdy", "mahm brih-TIY-skeh PRAH-voh YAHZ-dih", "I have a British driving licence"),
+      p("Czy ubezpieczenie jest w cenie?", "chih oo-bez-pyeh-CHEN-yah yest f TSEH-nyeh", "Is insurance included?"),
+      p("Poproszę samochód z automatyczną skrzynią", "poh-PROH-sheh sah-MOH-hoot z ow-toh-mah-TIHCH-nong SKSHIH-nyong", "An automatic car, please"),
+      p("Na ile dni?", "nah EE-leh dnee", "For how many days?"),
+      p("Gdzie mogę zaparkować?", "g-jyeh MOH-geh zah-par-koh-VATCH", "Where can I park?"),
+      p("Muszę zatankować", "MOO-sheh zah-tan-koh-VATCH", "I need to fill up"),
+      p("Benzyna czy diesel?", "ben-ZIH-nah chih DEE-zel", "Petrol or diesel?"),
+      p("Jaka jest dozwolona prędkość?", "YAH-kah yest doh-zvoh-LOH-nah PRENT-koshch", "What is the speed limit?"),
+      p("Zgubiłem drogę", "zgoo-BEE-wem DROH-geh", "I'm lost / I lost the way (male speaker)"),
+      p("Samochód nie chce zapalić", "sah-MOH-hoot nyeh htseh zah-PAH-leetch", "The car won't start"),
+    ],
+    grammar: "Muszę means I must or need to and pairs with an action: muszę zatankować, zaparkować, zadzwonić. Chcę is a direct want; chciałbym is a softer request.",
+  },
+  {
+    title: "Visit museums and sights",
+    slug: "sightseeing",
+    topic: "Travel",
+    eyebrow: "Travel 05",
+    description: "Buy admission, join a tour, ask about photos, and find the next landmark.",
+    icon: "🏛️",
+    time: 20,
+    phrases: [
+      p("Poproszę dwa bilety normalne", "poh-PROH-sheh dvah bee-LEH-tih nor-MAL-neh", "Two standard tickets, please"),
+      p("O której otwieracie?", "oh KTOO-rey ot-vyeh-RAH-chyeh", "What time do you open?"),
+      p("O której zamykacie?", "oh KTOO-rey zah-mih-KAH-chyeh", "What time do you close?"),
+      p("Czy jest zniżka dla studentów?", "chih yest ZNEESH-kah dlah stoo-DEN-toof", "Is there a student discount?"),
+      p("Czy jest wycieczka po angielsku?", "chih yest vih-CHYECH-kah poh an-GYEL-skoo", "Is there a tour in English?"),
+      p("Gdzie jest szatnia?", "g-jyeh yest SHAT-nyah", "Where is the cloakroom?"),
+      p("Czy można robić zdjęcia?", "chih MOZH-nah ROH-beetch ZDYEN-chah", "May you take photos?"),
+      p("Która wystawa jest najciekawsza?", "KTOO-rah vih-STAH-vah yest nay-chyeh-KAF-shah", "Which exhibition is most interesting?"),
+      p("Jak dojść na Stare Miasto?", "yahk doyshch nah STAH-reh MYAH-stoh", "How do I get to the Old Town?"),
+      p("Co warto zobaczyć?", "tsoh VAR-toh zoh-BAH-chitch", "What is worth seeing?"),
+      p("To miejsce jest piękne", "toh MYEY-stseh yest PYENK-neh", "This place is beautiful"),
+      p("Muzeum jest zamknięte w poniedziałki", "moo-ZEH-oom yest zam-KNYEN-teh f poh-nyeh-JOW-kee", "The museum is closed on Mondays"),
+    ],
+    grammar: "Można asks whether something is generally allowed: czy można robić zdjęcia? Warto means worth doing and combines with an action: warto zobaczyć, spróbować, odwiedzić.",
+  },
+  {
+    title: "Handle Polish social etiquette",
+    slug: "social-etiquette",
+    topic: "Social",
+    eyebrow: "Social 04",
+    description: "Address people warmly, apologise well, and respond naturally to everyday courtesy.",
+    icon: "🤗",
+    time: 19,
+    phrases: [
+      p("Panie Marku", "PAH-nyeh MAR-koo", "Mr Marek / Marek (polite address)"),
+      p("Pani Anno", "PAH-nee AN-noh", "Ms Anna / Anna (polite address)"),
+      p("Proszę usiąść", "PROH-sheh OO-shonshch", "Please sit down"),
+      p("Zapraszam do środka", "zah-PRAH-shahm doh SHROT-kah", "Please come inside"),
+      p("Smacznego!", "smach-NEH-goh", "Enjoy your meal!"),
+      p("Na zdrowie!", "nah ZDROH-vyeh", "Cheers! / Bless you!"),
+      p("Nie ma za co", "nyeh mah zah tsoh", "You're welcome / Don't mention it"),
+      p("Przepraszam za spóźnienie", "psheh-PRAH-shahm zah spoozh-NYEH-nyeh", "Sorry I'm late"),
+      p("Nic nie szkodzi", "neets nyeh SHKOH-jee", "No harm done / That's okay"),
+      p("Miło było pana poznać", "MEE-woh BIH-woh PAH-nah POZ-natch", "It was nice to meet you (to a man)"),
+      p("Miło było panią poznać", "MEE-woh BIH-woh PAH-nyong POZ-natch", "It was nice to meet you (to a woman)"),
+      p("Proszę pozdrowić rodzinę", "PROH-sheh poz-DROH-veetch roh-JEE-neh", "Please give my regards to the family"),
+    ],
+    grammar: "Names change when you call to someone: Marek becomes Marku and Anna becomes Anno. With pan or pani, this sounds warm and respectful rather than distant.",
+  },
+  {
+    title: "Connect ideas and tell a story",
+    slug: "story-connectors",
+    topic: "Next steps",
+    eyebrow: "Next steps 02",
+    description: "Link short sentences into a clear story and ask someone to tell you more.",
+    icon: "🧩",
+    time: 23,
+    phrases: [
+      p("Najpierw wypiłem kawę", "NAY-pyerf vih-PEE-wem KAH-veh", "First I drank coffee (male speaker)"),
+      p("Potem poszedłem do pracy", "POH-tem poh-SHED-wem doh PRAH-tsih", "Then I went to work (male speaker)"),
+      p("Później spotkałem znajomych", "POOZH-nyey spot-KAH-wem znay-OH-mihkh", "Later I met friends (male speaker)"),
+      p("Na końcu wróciłem do domu", "nah KON-tsoo vroo-CHEE-wem doh DOH-moo", "Finally I returned home (male speaker)"),
+      p("Chciałem wyjść, ale padało", "HYAH-wem vihyshch AH-leh pah-DAH-woh", "I wanted to go out, but it was raining (male speaker)"),
+      p("Zostałem w domu, ponieważ byłem zmęczony", "zoh-STAH-wem v DOH-moo poh-nyeh-VAZH BIH-wem zmen-CHOH-nih", "I stayed home because I was tired (male speaker)"),
+      p("Było zimno, dlatego wziąłem kurtkę", "BIH-woh ZHEEM-noh dla-TEH-goh VZYON-wem KOORT-keh", "It was cold, so I took a coat (male speaker)"),
+      p("Kiedy wróciłem, zrobiłem kolację", "KYEH-dih vroo-CHEE-wem zroh-BEE-wem koh-LAH-tsyeh", "When I returned, I made dinner (male speaker)"),
+      p("Jeśli będzie ładnie, pójdziemy na spacer", "YESH-lee BEN-jyeh WAD-nyeh pooy-JEH-mih nah SPAH-tsehr", "If the weather is nice, we'll go for a walk"),
+      p("Wydarzyło się coś ciekawego", "vih-dah-ZHIH-woh sheh tsosh chyeh-KAH-veh-goh", "Something interesting happened"),
+      p("Opowiedz mi, co się stało", "oh-POH-vyesh mee tsoh sheh STAH-woh", "Tell me what happened"),
+      p("I co było dalej?", "ee tsoh BIH-woh DAH-ley", "And what happened next?"),
+    ],
+    grammar: "Connectors turn separate phrases into a story: najpierw, potem, później, na końcu. Ale contrasts; ponieważ gives a reason; dlatego gives a result.",
+  },
 ];
 
 const POLISH_ASCII = { ą: "a", ć: "c", ę: "e", ł: "l", ń: "n", ó: "o", ś: "s", ź: "z", ż: "z" };
@@ -674,9 +818,11 @@ export const soundLessons = [
   { sound: "PRZ", like: "psh in one beat", examples: ["przepraszam", "przyjaciel", "przesiąść"], tip: "Join p straight into sz. In careful speech the cluster is compact, not two separate syllables." },
   { sound: "TRZ", like: "tsh in one beat", examples: ["trzy", "trzeba", "patrzę"], tip: "Start with t and release into a Polish sz. Some speakers soften it toward cz in fast speech." },
   { sound: "KRZ", like: "ksh in one beat", examples: ["krzesło", "krzyż", "skrzynka"], tip: "Keep the k short, then move straight into the same sound as sz. Voicing changes naturally around nearby sounds." },
+  { sound: "SZCZ", like: "sh followed by ch", examples: ["szczęście", "jeszcze", "szczecin"], tip: "Make sz, then slide straight into cz without adding a vowel between them. Slow and clear is completely acceptable." },
+  { sound: "ŚĆ / ŹĆ", like: "a soft sh-ch ending", examples: ["cześć", "jeść", "wyjść"], tip: "Keep both sounds light and forward. Let the tongue stay near the roof instead of resetting between consonants." },
 ];
 
-export const dialogues = [
+const coreDialogues = [
   {
     id: "cafe",
     icon: "☕",
@@ -724,8 +870,8 @@ export const dialogues = [
     setting: "You ask a passer-by for directions.",
     lines: [
       { speaker: "You", polish: "Przepraszam, gdzie jest dworzec?", phonetic: "psheh-PRAH-shahm, g-jyeh yest DVOH-zhets?", english: "Excuse me, where is the station?", choices: [
-        { polish: "Ask the question", phonetic: "", english: "A perfect polite opener.", good: true },
-        { polish: "Stay silent", phonetic: "", english: "You can do this — try the phrase.", good: false },
+        { polish: "Gdzie jest dworzec, proszę?", phonetic: "g-jyeh yest DVOH-zhets PROH-sheh", english: "Where is the station, please?", good: true },
+        { polish: "Gdzie jest kawa?", phonetic: "g-jyeh yest KAH-vah", english: "Where is the coffee?", good: false },
       ] },
       { speaker: "Passer-by", polish: "Prosto, a potem w lewo.", phonetic: "PROS-toh, ah POH-tem v LEH-voh", english: "Straight ahead, then left.", choices: [
         { polish: "Daleko?", phonetic: "dah-LEH-koh?", english: "Far?", good: true },
@@ -824,8 +970,8 @@ export const dialogues = [
     setting: "You need the correct platform and carriage.",
     lines: [
       { speaker: "You", polish: "Przepraszam, z którego peronu odjeżdża pociąg do Krakowa?", phonetic: "psheh-PRAH-shahm s KTOO-reh-goh peh-ROH-noo od-YEZH-jah POH-chyongk doh krah-KOH-vah", english: "Excuse me, which platform does the train to Kraków leave from?", choices: [
-        { polish: "Ask the question", phonetic: "", english: "A clear, polite station question.", good: true },
-        { polish: "Stay by the entrance", phonetic: "", english: "You might miss the train — ask.", good: false },
+        { polish: "Z którego peronu odjeżdża pociąg do Krakowa?", phonetic: "s KTOO-reh-goh peh-ROH-noo od-YEZH-jah POH-chyongk doh krah-KOH-vah", english: "Which platform does the train to Kraków leave from?", good: true },
+        { polish: "Gdzie jest restauracja?", phonetic: "g-jyeh yest res-tow-RAH-tsyah", english: "Where is the restaurant?", good: false },
       ] },
       { speaker: "Station staff", polish: "Z peronu czwartego. Pociąg ma dziesięć minut opóźnienia.", phonetic: "s peh-ROH-noo chvar-TEH-goh. POH-chyongk mah JEH-shench mee-NOOT oh-poozh-NYEH-nya", english: "From platform four. The train is ten minutes late.", choices: [
         { polish: "Dziękuję. Czy muszę się przesiąść?", phonetic: "jen-KOO-yeh. chih MOO-sheh sheh PSHEH-shonshch", english: "Thank you. Do I have to change?", good: true },
@@ -919,6 +1065,309 @@ export const dialogues = [
   },
 ];
 
+const q = (polish, phonetic, english, good = false) => ({ polish, phonetic, english, good });
+const turn = (speaker, polish, phonetic, english, choices) => ({ speaker, polish, phonetic, english, choices });
+
+const dialogueExtensions = {
+  cafe: {
+    thirdChoices: [
+      q("Poproszę herbatę bez cukru.", "poh-PROH-sheh her-BAH-teh bez TSOO-kroo", "A tea without sugar, please.", true),
+      q("Na wynos, proszę.", "nah VIH-nos PROH-sheh", "Takeaway, please.", true),
+      q("Jeszcze croissanta, proszę.", "YESH-cheh kroh-ah-SAHN-tah PROH-sheh", "A croissant as well, please.", true),
+    ],
+    lines: [
+      turn("Barista", "Razem osiemnaście złotych.", "RAH-zem oh-shem-NAHSH-cheh ZWOH-tih", "Eighteen zloty altogether.", [
+        q("Kartą, proszę.", "KAR-tong PROH-sheh", "By card, please.", true),
+        q("Zapłacę gotówką.", "zah-PWAH-tseh goh-TOOF-kong", "I'll pay cash.", true),
+        q("Nie mam gorączki.", "nyeh mahm goh-RONCH-kee", "I don't have a fever."),
+      ]),
+      turn("Barista", "Dziękuję. Kawa będzie za chwilę.", "jen-KOO-yeh. KAH-vah BEN-jyeh zah HVEE-leh", "Thank you. Your coffee will be ready shortly.", [
+        q("Świetnie, poczekam tutaj.", "SHVYET-nyeh poh-CHEH-kahm TOO-tie", "Great, I'll wait here.", true),
+        q("Dziękuję bardzo.", "jen-KOO-yeh BAR-dzoh", "Thank you very much.", true),
+        q("Z którego peronu?", "s KTOO-reh-goh peh-ROH-noo", "From which platform?"),
+      ]),
+    ],
+  },
+  meeting: {
+    thirdChoices: [
+      q("Cześć, jestem Alex. Bardzo mi miło.", "cheshch YES-tem Alex. BAR-dzoh mee MEE-woh", "Hi, I'm Alex. Very nice to meet you.", true),
+      q("Pochodzę z Irlandii.", "poh-HOH-dzeh z eer-LAN-dee", "I come from Ireland.", true),
+      q("Bardzo mi się podoba.", "BAR-dzoh mee sheh poh-DOH-bah", "I like it very much.", true),
+    ],
+    lines: [
+      turn("Marta", "Czym się zajmujesz?", "chim sheh zy-MOO-yesh", "What do you do?", [
+        q("Pracuję w finansach.", "prah-TSOO-yeh v fee-NAHN-sahkh", "I work in finance.", true),
+        q("Studiuję i pracuję z domu.", "stoo-DYOO-yeh ee prah-TSOO-yeh z DOH-moo", "I study and work from home.", true),
+        q("Poproszę bilet.", "poh-PROH-sheh BEE-let", "A ticket, please."),
+      ]),
+      turn("Marta", "Może kiedyś pójdziemy na kawę?", "MOH-zheh KYEH-dish pooy-JEH-mih nah KAH-veh", "Maybe we could go for coffee sometime?", [
+        q("Chętnie! Może w sobotę?", "HEN-tnyeh MOH-zheh f soh-BOH-teh", "Gladly! Maybe on Saturday?", true),
+        q("Jasne, napisz do mnie.", "YAH-sneh nah-PEESH doh MNIEH", "Sure, message me.", true),
+        q("Nie ma ciepłej wody.", "nyeh mah CHYEP-wey VOH-dih", "There is no hot water."),
+      ]),
+    ],
+  },
+  directions: {
+    thirdChoices: [
+      q("Powiedz: ‘Przepraszam, jak dojść do dworca?’", "psheh-PRAH-shahm yahk doyshch doh DVOR-tsah", "Use another natural version of the question.", true),
+      q("W lewo, a potem prosto?", "v LEH-voh ah POH-tem PROS-toh", "Left, then straight ahead?", true),
+      q("Rozumiem. Dziękuję!", "roh-ZOO-myem jen-KOO-yeh", "I understand. Thank you!", true),
+    ],
+    lines: [
+      turn("Passer-by", "Dworzec jest obok dużego hotelu.", "DVOH-zhets yest OH-bok doo-ZHEH-goh hoh-TEH-loo", "The station is next to the large hotel.", [
+        q("A gdzie jest przystanek autobusowy?", "ah g-jyeh yest pshih-STAH-nek ow-toh-boo-SOH-vih", "And where is the bus stop?", true),
+        q("Czy hotel jest po prawej?", "chih hoh-TEL yest poh PRAH-vey", "Is the hotel on the right?", true),
+        q("Poproszę kawę z mlekiem.", "poh-PROH-sheh KAH-veh z MLEH-kyem", "A coffee with milk, please."),
+      ]),
+      turn("Passer-by", "Przystanek jest dokładnie przed dworcem.", "pshih-STAH-nek yest doh-KWAD-nyeh pshet DVOR-tsem", "The bus stop is directly in front of the station.", [
+        q("Świetnie, teraz już wiem.", "SHVYET-nyeh TEH-rahz yoosh vyem", "Great, now I know.", true),
+        q("Bardzo pan pomógł. Dziękuję.", "BAR-dzoh pahn POH-mookw jen-KOO-yeh", "You helped a lot. Thank you.", true),
+        q("Czy jest coś na kaszel?", "chih yest tsosh nah KAH-shel", "Is there something for a cough?"),
+      ]),
+    ],
+  },
+  restaurant: {
+    thirdChoices: [
+      q("Dla jednej osoby, proszę.", "dlah YED-ney oh-SOH-bih PROH-sheh", "For one person, please.", true),
+      q("Jeszcze chwilę, proszę.", "YESH-cheh HVEE-leh PROH-sheh", "One more moment, please.", true),
+      q("Poproszę zupę i pierogi.", "poh-PROH-sheh ZOO-peh ee pyeh-ROH-gee", "The soup and pierogi, please.", true),
+    ],
+    lines: [
+      turn("Server", "Co podać do picia?", "tsoh POH-datch doh PEE-chah", "What can I bring you to drink?", [
+        q("Wodę niegazowaną, proszę.", "VOH-deh nyeh-gah-zoh-VAH-nong PROH-sheh", "Still water, please.", true),
+        q("Kieliszek czerwonego wina, proszę.", "KYEH-lee-shek chehr-voh-NEH-goh VEE-nah PROH-sheh", "A glass of red wine, please.", true),
+        q("Jeden bilet do Warszawy.", "YEH-den BEE-let doh var-SHAH-vih", "One ticket to Warsaw."),
+      ]),
+      turn("Server", "Czy podać już rachunek?", "chih POH-datch yoosh rah-HOO-nek", "Shall I bring the bill now?", [
+        q("Tak, rachunek proszę.", "tahk rah-HOO-nek PROH-sheh", "Yes, the bill please.", true),
+        q("Jeszcze nie. Poproszę kawę.", "YESH-cheh nyeh poh-PROH-sheh KAH-veh", "Not yet. A coffee, please.", true),
+        q("Pociąg ma opóźnienie.", "POH-chyongk mah oh-poozh-NYEH-nyeh", "The train is delayed."),
+      ]),
+    ],
+  },
+  tickets: {
+    thirdChoices: [
+      q("Poproszę bilet do Krakowa.", "poh-PROH-sheh BEE-let doh krah-KOH-vah", "A ticket to Kraków, please.", true),
+      q("Zapłacę gotówką.", "zah-PWAH-tseh goh-TOOF-kong", "I'll pay cash.", true),
+      q("Dziękuję. Z którego peronu?", "jen-KOO-yeh s KTOO-reh-goh peh-ROH-noo", "Thank you. From which platform?", true),
+    ],
+    lines: [
+      turn("Clerk", "Bilet jest ważny na dzisiejszy pociąg o czternastej.", "BEE-let yest VAZH-nih nah jee-SHEY-shih POH-chyongk oh chtehr-NAH-stey", "The ticket is valid for today's two o'clock train.", [
+        q("Czy muszę go skasować?", "chih MOO-sheh goh skah-SOH-vatch", "Do I need to validate it?", true),
+        q("Rozumiem. Będę na peronie wcześniej.", "roh-ZOO-myem BEN-deh nah peh-ROH-nyeh FCHESH-nyey", "I understand. I'll be on the platform early.", true),
+        q("Boli mnie gardło.", "BOH-lee mnyeh GAR-dwoh", "My throat hurts."),
+      ]),
+      turn("Conductor", "Dzień dobry. Proszę przygotować bilety do kontroli.", "jen DOH-brih. PROH-sheh pshih-goh-TOH-vatch bee-LEH-tih doh kon-TROH-lee", "Good afternoon. Please have your tickets ready for inspection.", [
+        q("Proszę, oto mój bilet.", "PROH-sheh OH-toh mooy BEE-let", "Here is my ticket.", true),
+        q("Już pokazuję.", "yoosh poh-kah-ZOO-yeh", "I'm showing it now.", true),
+        q("Bez cukru, proszę.", "bez TSOO-kroo PROH-sheh", "Without sugar, please."),
+      ]),
+    ],
+  },
+  pharmacy: {
+    thirdChoices: [
+      q("Mam kaszel i boli mnie gardło.", "mahm KAH-shel ee BOH-lee mnyeh GAR-dwoh", "I have a cough and a sore throat.", true),
+      q("Jak często mam to brać?", "yahk CHEN-stoh mahm toh bratch", "How often should I take it?", true),
+      q("Kartą, proszę.", "KAR-tong PROH-sheh", "By card, please.", true),
+    ],
+    lines: [
+      turn("Pharmacist", "Proszę brać jedną tabletkę dwa razy dziennie.", "PROH-sheh bratch YED-nong tah-BLET-keh dvah RAH-zih JEN-nyeh", "Take one tablet twice a day.", [
+        q("Przed jedzeniem czy po jedzeniu?", "pshet yeh-JEN-yem chih poh yeh-JEN-yoo", "Before or after food?", true),
+        q("Dobrze, dwa razy dziennie.", "DOH-bzheh dvah RAH-zih JEN-nyeh", "Okay, twice a day.", true),
+        q("Która bramka?", "KTOO-rah BRAM-kah", "Which gate?"),
+      ]),
+      turn("Pharmacist", "Czy ma pan jakieś alergie?", "chih mah pahn YAH-kyehsh ah-LEHR-gyeh", "Do you have any allergies?", [
+        q("Nie, nie mam alergii.", "nyeh nyeh mahm ah-LEHR-gyee", "No, I don't have allergies.", true),
+        q("Tak, mam alergię na penicylinę.", "tahk mahm ah-LEHR-gyeh nah peh-nee-tsih-LEE-neh", "Yes, I'm allergic to penicillin.", true),
+        q("Poproszę dwa bilety.", "poh-PROH-sheh dvah bee-LEH-tih", "Two tickets, please."),
+      ]),
+    ],
+  },
+  "hotel-check-in": {
+    thirdChoices: [
+      q("Chciałbym się zameldować.", "HYOW-bim sheh zah-mel-doh-VATCH", "I'd like to check in.", true),
+      q("O której jest śniadanie?", "oh KTOO-rey yest shnya-DAH-nyeh", "What time is breakfast?", true),
+      q("Dziękuję. Na którym piętrze?", "jen-KOO-yeh nah KTOO-rim PYEN-tsheh", "Thank you. On which floor?", true),
+    ],
+    lines: [
+      turn("Receptionist", "Hasło do Wi-Fi jest na karcie w pokoju.", "HAH-swoh doh VEE-fee yest nah KAR-chyeh f poh-KOH-yoo", "The Wi-Fi password is on the card in your room.", [
+        q("Dziękuję. Czy Wi-Fi jest bezpłatne?", "jen-KOO-yeh chih VEE-fee yest bez-PWAT-neh", "Thank you. Is Wi-Fi free?", true),
+        q("Świetnie, znajdę kartę w pokoju.", "SHVYET-nyeh ZNAY-deh KAR-teh f poh-KOH-yoo", "Great, I'll find the card in the room.", true),
+        q("Która wystawa jest otwarta?", "KTOO-rah vih-STAH-vah yest ot-FAR-tah", "Which exhibition is open?"),
+      ]),
+      turn("Receptionist", "Wymeldowanie jest do jedenastej.", "vih-mel-doh-VAH-nyeh yest doh yeh-deh-NAH-stey", "Check-out is by eleven.", [
+        q("Czy mogę zostawić bagaż po wymeldowaniu?", "chih MOH-geh zoh-STAH-veetch BAH-gahsh poh vih-mel-doh-VAH-nyoo", "Can I leave my luggage after check-out?", true),
+        q("Dobrze, przyjdę przed jedenastą.", "DOH-bzheh PSHIY-deh pshet yeh-deh-NAH-stong", "Okay, I'll come before eleven.", true),
+        q("Poproszę pół kilo jabłek.", "poh-PROH-sheh pool KEE-loh YAH-bwek", "Half a kilo of apples, please."),
+      ]),
+    ],
+  },
+  "train-platform": {
+    thirdChoices: [
+      q("Czy ten pociąg jedzie do Krakowa?", "chih ten POH-chyongk YEH-jyeh doh krah-KOH-vah", "Does this train go to Kraków?", true),
+      q("Czy opóźnienie może się zwiększyć?", "chih oh-poozh-NYEH-nyeh MOH-zheh sheh ZVYENK-shitch", "Could the delay increase?", true),
+      q("Dziękuję. Gdzie jest wagon piąty?", "jen-KOO-yeh g-jyeh yest VAH-gon PYON-tih", "Thank you. Where is carriage five?", true),
+    ],
+    lines: [
+      turn("Conductor", "Proszę pokazać bilet i dokument.", "PROH-sheh poh-KAH-zatch BEE-let ee doh-koo-MENT", "Please show your ticket and ID.", [
+        q("Proszę, mam oba dokumenty.", "PROH-sheh mahm OH-bah doh-koo-MEN-tih", "Here, I have both documents.", true),
+        q("Już wyciągam paszport.", "yoosh vih-CHON-gahm PASH-port", "I'm getting my passport out now.", true),
+        q("Nie potrzebuję torby.", "nyeh poh-tsheh-BOO-yeh TOR-bih", "I don't need a bag."),
+      ]),
+      turn("Passenger", "Przepraszam, czy to miejsce jest wolne?", "psheh-PRAH-shahm chih toh MYEY-stseh yest VOL-neh", "Excuse me, is this seat free?", [
+        q("Tak, proszę usiąść.", "tahk PROH-sheh OO-shonshch", "Yes, please sit down.", true),
+        q("Tak, nikt tu nie siedzi.", "tahk neekt too nyeh SHYEH-jee", "Yes, nobody is sitting here.", true),
+        q("Potrzebuję znaczka.", "poh-tsheh-BOO-yeh ZNACH-kah", "I need a stamp."),
+      ]),
+    ],
+  },
+  "market-stall": {
+    thirdChoices: [
+      q("Poproszę kilogram jabłek.", "poh-PROH-sheh KEE-loh-gram YAH-bwek", "A kilogram of apples, please.", true),
+      q("Nie, dziękuję. To wszystko.", "nyeh jen-KOO-yeh toh FSHIST-koh", "No thank you. That's everything.", true),
+      q("Czy mogę zapłacić kartą?", "chih MOH-geh zah-PWAH-cheetch KAR-tong", "Can I pay by card?", true),
+    ],
+    lines: [
+      turn("Seller", "Razem dwadzieścia dwa złote.", "RAH-zem dvah-JESH-chah dvah ZWOH-teh", "Twenty-two zloty altogether.", [
+        q("Proszę. Zapłacę kartą.", "PROH-sheh zah-PWAH-tseh KAR-tong", "Here you are. I'll pay by card.", true),
+        q("Mam gotówkę.", "mahm goh-TOOF-keh", "I have cash.", true),
+        q("Mój lot jest opóźniony.", "mooy lot yest oh-poozh-NYOH-nih", "My flight is delayed."),
+      ]),
+      turn("Seller", "Czy potrzebuje pan paragon?", "chih poh-tsheh-BOO-yeh pahn pah-RAH-gon", "Do you need a receipt?", [
+        q("Tak, poproszę paragon.", "tahk poh-PROH-sheh pah-RAH-gon", "Yes, a receipt please.", true),
+        q("Nie, dziękuję. Miłego dnia!", "nyeh jen-KOO-yeh mee-WEH-goh DNYAH", "No thank you. Have a nice day!", true),
+        q("Jak często mam to brać?", "yahk CHEN-stoh mahm toh bratch", "How often should I take it?"),
+      ]),
+    ],
+  },
+  "doctor-visit": {
+    thirdChoices: [
+      q("Mam kaszel i wysoką temperaturę.", "mahm KAH-shel ee vih-SOH-kong tem-peh-rah-TOO-reh", "I have a cough and a high temperature.", true),
+      q("Od trzech dni.", "od tshekh dnee", "For three days.", true),
+      q("Jak często mam brać ten lek?", "yahk CHEN-stoh mahm bratch ten lek", "How often should I take this medicine?", true),
+    ],
+    lines: [
+      turn("Doctor", "Czy ma pan alergię na jakieś leki?", "chih mah pahn ah-LEHR-gyeh nah YAH-kyehsh LEH-kee", "Are you allergic to any medicines?", [
+        q("Nie, nie mam żadnych alergii.", "nyeh nyeh mahm ZHAD-nihkh ah-LEHR-gyee", "No, I don't have any allergies.", true),
+        q("Tak, mam alergię na penicylinę.", "tahk mahm ah-LEHR-gyeh nah peh-nee-tsih-LEE-neh", "Yes, I'm allergic to penicillin.", true),
+        q("Mam rezerwację w hotelu.", "mahm reh-zehr-VAH-tsyeh v hoh-TEH-loo", "I have a hotel reservation."),
+      ]),
+      turn("Doctor", "Czy potrzebuje pan zwolnienia lekarskiego?", "chih poh-tsheh-BOO-yeh pahn zvol-NYEH-nya leh-KAR-skeh-goh", "Do you need a doctor's note?", [
+        q("Tak, potrzebuję zwolnienia do piątku.", "tahk poh-tsheh-BOO-yeh zvol-NYEH-nya doh PYON-tkoo", "Yes, I need a note until Friday.", true),
+        q("Nie, dziękuję. Pracuję z domu.", "nyeh jen-KOO-yeh prah-TSOO-yeh z DOH-moo", "No thank you. I work from home.", true),
+        q("W jedną stronę, proszę.", "v YED-nong STROH-neh PROH-sheh", "One way, please."),
+      ]),
+    ],
+  },
+  "birthday-invitation": {
+    thirdChoices: [
+      q("Niestety nie dam rady, ale dziękuję.", "nyeh-STEH-tih nyeh dahm RAH-dih AH-leh jen-KOO-yeh", "Unfortunately I can't make it, but thank you.", true),
+      q("Co mam przynieść?", "tsoh mahm pshih-NYESHCH", "What should I bring?", true),
+      q("Do zobaczenia w sobotę!", "doh zoh-bah-CHEN-yah f soh-BOH-teh", "See you on Saturday!", true),
+    ],
+    lines: [
+      turn("Kasia", "Będzie pizza, ciasto i dużo muzyki.", "BEN-jyeh PEET-sah CHYAH-stoh ee DOO-zhoh moo-ZIH-kee", "There will be pizza, cake, and lots of music.", [
+        q("Brzmi świetnie!", "bzhmee SHVYET-nyeh", "Sounds great!", true),
+        q("Mogę przynieść coś do picia.", "MOH-geh pshih-NYESHCH tsosh doh PEE-chah", "I can bring something to drink.", true),
+        q("Woda cieknie z sufitu.", "VOH-dah CHYEK-nyeh z soo-FEE-too", "Water is leaking from the ceiling."),
+      ]),
+      turn("Kasia", "Czekamy na ciebie od siódmej!", "cheh-KAH-mih nah CHYEH-byeh od SHOOD-mey", "We'll be waiting for you from seven!", [
+        q("Będę punktualnie.", "BEN-deh punk-too-AL-nyeh", "I'll be on time.", true),
+        q("Mogę się trochę spóźnić, ale przyjdę.", "MOH-geh sheh TROH-heh SPOOZH-neetch AH-leh PSHIY-deh", "I may be a little late, but I'll come.", true),
+        q("Chcę wypłacić gotówkę.", "htseh vih-PWAH-cheetch goh-TOOF-keh", "I want to withdraw cash."),
+      ]),
+    ],
+  },
+  "apartment-repair": {
+    thirdChoices: [
+      q("Nie ma ciepłej wody od rana.", "nyeh mah CHYEP-wey VOH-dih od RAH-nah", "There has been no hot water since morning.", true),
+      q("Tak, sufit jest już mokry.", "tahk SOO-feet yest yoosh MOH-krih", "Yes, the ceiling is already wet.", true),
+      q("Czy może przyjść trochę wcześniej?", "chih MOH-zheh pshihyshch TROH-heh FCHESH-nyey", "Can they come a little earlier?", true),
+    ],
+    lines: [
+      turn("Landlord", "Czy hydraulik może wejść, jeśli pana nie będzie?", "chih hih-DROW-leek MOH-zheh VEYSHCH YESH-lee PAH-nah nyeh BEN-jyeh", "Can the plumber enter if you aren't there?", [
+        q("Tak, zostawię klucz u sąsiada.", "tahk zoh-STAH-vyeh klooch oo son-SHYAH-dah", "Yes, I'll leave a key with the neighbour.", true),
+        q("Nie, będę w domu po piątej.", "nyeh BEN-deh v DOH-moo poh PYON-tey", "No, I'll be home after five.", true),
+        q("Gdzie jest najbliższa apteka?", "g-jyeh yest nay-BLEESH-shah ap-TEH-kah", "Where is the nearest pharmacy?"),
+      ]),
+      turn("Plumber", "Już naprawione. Proszę sprawdzić wodę.", "yoosh nah-prah-VYOH-neh PROH-sheh SPRAHV-jeetch VOH-deh", "It's fixed. Please check the water.", [
+        q("Już działa. Dziękuję za pomoc.", "yoosh JAH-wah jen-KOO-yeh zah POH-mots", "It works now. Thank you for your help.", true),
+        q("Wszystko w porządku, dziękuję.", "FSHIST-koh f poh-ZHON-tkoo jen-KOO-yeh", "Everything is fine, thank you.", true),
+        q("Kawę z mlekiem, proszę.", "KAH-veh z MLEH-kyem PROH-sheh", "Coffee with milk, please."),
+      ]),
+    ],
+  },
+};
+
+const advancedDialogues = [
+  {
+    id: "post-office",
+    icon: "📦",
+    title: "Sending a parcel",
+    setting: "You send a tracked parcel abroad.",
+    lines: [
+      turn("Clerk", "Dzień dobry. Co chce pan wysłać?", "jen DOH-brih. tsoh htseh pahn VIH-swath", "Good morning. What would you like to send?", [q("Chcę wysłać paczkę.", "htseh VIH-swath PAHCH-keh", "I want to send a parcel.", true), q("Poproszę list polecony.", "poh-PROH-sheh leest poh-leh-TSOH-nih", "A registered letter, please.", true), q("Chcę wymienić funty.", "htseh vih-MYEH-neetch FOON-tih", "I want to exchange pounds.")]),
+      turn("Clerk", "Dokąd ma iść przesyłka?", "DOH-kont mah eeshch psheh-SIW-kah", "Where is the item going?", [q("Do Wielkiej Brytanii.", "doh VYEL-kyey brih-TAH-nyee", "To the United Kingdom.", true), q("Do Niemiec.", "doh NYEH-myets", "To Germany.", true), q("Na drugim piętrze.", "nah DROO-geem PYEN-tsheh", "On the second floor.")]),
+      turn("Clerk", "Priorytetem czy ekonomicznie?", "pree-oh-RIH-teh-tem chih eh-koh-noh-MEECH-nyeh", "Priority or economy?", [q("Priorytetem, proszę.", "pree-oh-RIH-teh-tem PROH-sheh", "Priority, please.", true), q("Ekonomicznie. Nie śpieszy mi się.", "eh-koh-noh-MEECH-nyeh nyeh SHPYEH-shih mee sheh", "Economy. I'm not in a hurry.", true), q("Bez mięsa, proszę.", "bez MYEN-sah PROH-sheh", "Without meat, please.")]),
+      turn("Clerk", "Proszę wypełnić formularz i podpisać tutaj.", "PROH-sheh vih-PEW-neetch for-MOO-lahsh ee pot-PEE-satch TOO-tie", "Please fill in the form and sign here.", [q("Dobrze. Gdzie wpisać adres?", "DOH-bzheh g-jyeh VPEE-satch AH-dres", "Okay. Where do I write the address?", true), q("Już wypełniam.", "yoosh vih-PEW-nyahm", "I'm filling it in now.", true), q("Czy można robić zdjęcia?", "chih MOZH-nah ROH-beetch ZDYEN-chah", "May I take photos?")]),
+      turn("Clerk", "Razem sześćdziesiąt złotych.", "RAH-zem shesh-JEH-shont ZWOH-tih", "Sixty zloty altogether.", [q("Zapłacę kartą.", "zah-PWAH-tseh KAR-tong", "I'll pay by card.", true), q("Mam gotówkę. Poproszę też potwierdzenie.", "mahm goh-TOOF-keh poh-PROH-sheh tesh pot-fyehr-JEN-yah", "I have cash. I'd also like confirmation.", true), q("Nie mam zasięgu.", "nyeh mahm zah-SHYEN-goo", "I don't have signal.")]),
+    ],
+  },
+  {
+    id: "currency-exchange",
+    icon: "🏦",
+    title: "Exchanging money",
+    setting: "You exchange pounds at a bank counter.",
+    lines: [
+      turn("Adviser", "Dzień dobry. W czym mogę pomóc?", "jen DOH-brih. f chim MOH-geh POH-moots", "Good morning. How can I help?", [q("Chcę wymienić funty na złote.", "htseh vih-MYEH-neetch FOON-tih nah ZWOH-teh", "I want to exchange pounds for zloty.", true), q("Chciałbym otworzyć konto.", "HYOW-bim ot-VOH-zhitch KON-toh", "I'd like to open an account.", true), q("Poproszę dwa bilety.", "poh-PROH-sheh dvah bee-LEH-tih", "Two tickets, please.")]),
+      turn("Adviser", "Dzisiejszy kurs to pięć złotych za funta.", "jee-SHEY-shih koors toh pyench ZWOH-tih zah FOON-tah", "Today's rate is five zloty to the pound.", [q("Chcę wymienić sto funtów.", "htseh vih-MYEH-neetch stoh FOON-toof", "I want to exchange one hundred pounds.", true), q("Czy jest dodatkowa prowizja?", "chih yest doh-DAT-koh-vah proh-VEE-zyah", "Is there an extra fee?", true), q("Kiedy paczka dotrze?", "KYEH-dih PAHCH-kah DOH-tsheh", "When will the parcel arrive?")]),
+      turn("Adviser", "Prowizja wynosi dziesięć złotych.", "proh-VEE-zyah vih-NOH-shee JEH-shench ZWOH-tih", "The fee is ten zloty.", [q("Rozumiem. Proszę kontynuować.", "roh-ZOO-myem PROH-sheh kon-tih-noh-VATCH", "I understand. Please continue.", true), q("W takim razie wymienię osiemdziesiąt funtów.", "f TAH-keem RAH-zyeh vih-MYEH-nyeh oh-shem-JEH-shont FOON-toof", "In that case I'll exchange eighty pounds.", true), q("O której jest śniadanie?", "oh KTOO-rey yest shnya-DAH-nyeh", "What time is breakfast?")]),
+      turn("Adviser", "Poproszę paszport albo dowód osobisty.", "poh-PROH-sheh PASH-port AL-boh DOH-voot oh-soh-BEES-tih", "Your passport or identity card, please.", [q("Proszę, oto mój paszport.", "PROH-sheh OH-toh mooy PASH-port", "Here is my passport.", true), q("Czy brytyjskie prawo jazdy wystarczy?", "chih brih-TIY-skeh PRAH-voh YAZ-dih vih-STAR-chih", "Will a British driving licence be enough?", true), q("Poproszę zupę pomidorową.", "poh-PROH-sheh ZOO-peh poh-mee-doh-ROH-vong", "Tomato soup, please.")]),
+      turn("Adviser", "Proszę podpisać tutaj. Oto złotówki.", "PROH-sheh pot-PEE-satch TOO-tie. OH-toh zwoh-TOOF-kee", "Please sign here. Here are your zloty.", [q("Dziękuję. Poproszę potwierdzenie.", "jen-KOO-yeh poh-PROH-sheh pot-fyehr-JEN-yah", "Thank you. I'd like confirmation.", true), q("Czy może pan przeliczyć pieniądze przy mnie?", "chih MOH-zheh pahn psheh-LEE-chitch pyeh-NYON-dzeh pshih mnyeh", "Could you count the money in front of me?", true), q("Z którego peronu?", "s KTOO-reh-goh peh-ROH-noo", "From which platform?")]),
+    ],
+  },
+  {
+    id: "car-rental",
+    icon: "🚗",
+    title: "Renting a car",
+    setting: "You collect a rental car for three days.",
+    lines: [
+      turn("Agent", "Dzień dobry. Ma pan rezerwację?", "jen DOH-brih. mah pahn reh-zehr-VAH-tsyeh", "Good morning. Do you have a reservation?", [q("Tak, na nazwisko Taylor.", "tahk nah nahz-VEES-koh Taylor", "Yes, under Taylor.", true), q("Nie, ale chciałbym wynająć samochód.", "nyeh AH-leh HYOW-bim vih-NAH-yonch sah-MOH-hoot", "No, but I'd like to rent a car.", true), q("Chcę wpłacić pieniądze.", "htseh VPWAH-cheetch pyeh-NYON-dzeh", "I want to deposit money.")]),
+      turn("Agent", "Woli pan skrzynię manualną czy automatyczną?", "VOH-lee pahn SKSHIH-nyeh mah-noo-AL-nong chih ow-toh-mah-TIHCH-nong", "Would you prefer manual or automatic?", [q("Automatyczną, proszę.", "ow-toh-mah-TIHCH-nong PROH-sheh", "Automatic, please.", true), q("Manualna też będzie w porządku.", "mah-noo-AL-nah tesh BEN-jyeh f poh-ZHON-tkoo", "Manual will also be fine.", true), q("Boli mnie brzuch.", "BOH-lee mnyeh bzhooh", "My stomach hurts.")]),
+      turn("Agent", "Podstawowe ubezpieczenie jest w cenie.", "pot-STAH-voh-veh oo-bez-pyeh-CHEN-yah yest f TSEH-nyeh", "Basic insurance is included.", [q("Ile kosztuje pełne ubezpieczenie?", "EE-leh kosh-TOO-yeh PEW-neh oo-bez-pyeh-CHEN-yah", "How much is full insurance?", true), q("Dobrze, podstawowe wystarczy.", "DOH-bzheh pot-STAH-voh-veh vih-STAR-chih", "Okay, basic is enough.", true), q("Która wystawa jest najciekawsza?", "KTOO-rah vih-STAH-vah yest nay-chyeh-KAF-shah", "Which exhibition is most interesting?")]),
+      turn("Agent", "Proszę zwrócić samochód z pełnym bakiem.", "PROH-sheh ZVROO-cheetch sah-MOH-hoot z PEW-nim BAH-kyem", "Please return the car with a full tank.", [q("Gdzie jest najbliższa stacja benzynowa?", "g-jyeh yest nay-BLEESH-shah STAH-tsyah ben-zih-NOH-vah", "Where is the nearest petrol station?", true), q("Rozumiem. Zatankuję przed zwrotem.", "roh-ZOO-myem zah-tan-KOO-yeh pshet ZVROH-tem", "I understand. I'll fill up before returning it.", true), q("Czy dostanę numer śledzenia?", "chih doh-STAH-neh NOO-mehr shle-JEN-yah", "Will I get a tracking number?")]),
+      turn("Agent", "Oto kluczyki. Samochód stoi na miejscu dwanaście.", "OH-toh kloo-CHIH-kee. sah-MOH-hoot stoy nah MYEY-stsoo dvah-NAHSH-chyeh", "Here are the keys. The car is in space twelve.", [q("Dziękuję. Najpierw sprawdzę samochód.", "jen-KOO-yeh NAY-pyerf SPRAHV-dzeh sah-MOH-hoot", "Thank you. I'll inspect the car first.", true), q("Czy może pan zaznaczyć istniejące uszkodzenia?", "chih MOH-zheh pahn zah-ZNAH-chitch ees-tnyeh-YON-tseh oo-shkoh-JEN-yah", "Could you mark the existing damage?", true), q("Wszystkiego najlepszego!", "FSHIST-kyeh-goh nay-LEP-sheh-goh", "Happy birthday!")]),
+    ],
+  },
+  {
+    id: "museum-visit",
+    icon: "🏛️",
+    title: "Visiting a museum",
+    setting: "You buy admission and plan your visit.",
+    lines: [
+      turn("Cashier", "Dzień dobry. Ile biletów?", "jen DOH-brih. EE-leh bee-LEH-toof", "Good morning. How many tickets?", [q("Poproszę dwa bilety normalne.", "poh-PROH-sheh dvah bee-LEH-tih nor-MAL-neh", "Two standard tickets, please.", true), q("Jeden normalny i jeden studencki.", "YEH-den nor-MAL-nih ee YEH-den stoo-DEN-tskee", "One standard and one student ticket.", true), q("Chciałbym wynająć samochód.", "HYOW-bim vih-NAH-yonch sah-MOH-hoot", "I'd like to rent a car.")]),
+      turn("Cashier", "O dwunastej zaczyna się wycieczka z przewodnikiem.", "oh dvoo-NAH-stey zah-CHIH-nah sheh vih-CHYECH-kah s psheh-vod-NEE-kyem", "A guided tour starts at noon.", [q("Czy wycieczka jest po angielsku?", "chih vih-CHYECH-kah yest poh an-GYEL-skoo", "Is the tour in English?", true), q("Czy mogę dostać audioprzewodnik?", "chih MOH-geh doh-STATCH ow-dyoh-psheh-VOD-neek", "Can I get an audio guide?", true), q("Czy ma pani coś na kaszel?", "chih mah PAH-nee tsosh nah KAH-shel", "Do you have something for a cough?")]),
+      turn("Cashier", "Zdjęcia są dozwolone, ale bez lampy błyskowej.", "ZDYEN-chah song doh-zvoh-LOH-neh AH-leh bez LAM-pih bwih-SKOH-vey", "Photos are allowed, but without flash.", [q("Rozumiem, wyłączę lampę.", "roh-ZOO-myem VIH-won-cheh LAM-peh", "I understand. I'll turn off the flash.", true), q("Dobrze. Czy można nagrywać wideo?", "DOH-bzheh chih MOZH-nah nah-grih-VATCH VEE-deh-oh", "Okay. May I record video?", true), q("Jaki jest kurs wymiany?", "YAH-kee yest koors vih-MYAH-nih", "What is the exchange rate?")]),
+      turn("Guide", "Najciekawsza wystawa jest na trzecim piętrze.", "nay-chyeh-KAF-shah vih-STAH-vah yest nah TSHEH-cheem PYEN-tsheh", "The most interesting exhibition is on the third floor.", [q("Jak tam dojść?", "yahk tahm doyshch", "How do I get there?", true), q("Ile czasu potrzebuję na całą wystawę?", "EE-leh CHAH-soo poh-tsheh-BOO-yeh nah TSAH-wong vih-STAH-veh", "How much time do I need for the whole exhibition?", true), q("Rachunek, proszę.", "rah-HOO-nek PROH-sheh", "The bill, please.")]),
+      turn("Guide", "Muzeum zamyka się za godzinę.", "moo-ZEH-oom zah-MIH-kah sheh zah goh-JEE-neh", "The museum closes in an hour.", [q("Zdążę jeszcze zobaczyć wystawę?", "ZDON-zheh YESH-cheh zoh-BAH-chitch vih-STAH-veh", "Do I still have time to see the exhibition?", true), q("Gdzie jest sklep muzealny?", "g-jyeh yest sklep moo-zeh-AL-nih", "Where is the museum shop?", true), q("Samochód nie chce zapalić.", "sah-MOH-hoot nyeh htseh zah-PAH-leetch", "The car won't start.")]),
+    ],
+  },
+];
+
+export const dialogues = [
+  ...coreDialogues.map((dialogue) => {
+    const extension = dialogueExtensions[dialogue.id];
+    return {
+      ...dialogue,
+      lines: [
+        ...dialogue.lines.map((line, index) => ({ ...line, choices: [...line.choices, extension.thirdChoices[index]] })),
+        ...extension.lines,
+      ],
+    };
+  }),
+  ...advancedDialogues,
+];
+
 export const grammarGuides = [
   { title: "A sentence without ‘I’", example: "(Ja) mówię po polsku", meaning: "I speak Polish", body: "The verb ending carries the person, so ja is usually optional. Use it for contrast or emphasis." },
   { title: "Make it negative", example: "Rozumiem → Nie rozumiem", meaning: "I understand → I don't understand", body: "Put nie immediately before the verb. Unlike English, you need no extra helper word." },
@@ -944,4 +1393,10 @@ export const grammarGuides = [
   { title: "It hurts me", example: "Boli mnie głowa", meaning: "My head hurts", body: "Polish describes pain as something hurting you. Boli mnie works with one body part; bolą mnie works with plural parts, as in bolą mnie plecy." },
   { title: "Small pronouns, natural rhythm", example: "napisz mi · słyszę cię", meaning: "write to me · I hear you", body: "Mi, ci, and cię are short unstressed pronouns. Keep them close to the verb and learn the whole phrase by sound rather than translating each word." },
   { title: "Question words that unlock details", example: "gdzie · kiedy · który", meaning: "where · when · which", body: "Start with the missing detail: gdzie for a place, kiedy for a time, który or która for a choice, ile for an amount, and jak for how." },
+  { title: "Without and from use the same family", example: "bez cukru · z hotelu", meaning: "without sugar · from the hotel", body: "After bez and many uses of z, the noun takes a form often ending in -u, -a, or -y. Learn high-value pairs such as bez cukru, z domu, and z pracy." },
+  { title: "With someone or something", example: "z mlekiem · z przyjacielem", meaning: "with milk · with a friend", body: "Z can also mean with. The following word changes: mleko becomes mlekiem, przyjaciel becomes przyjacielem, and karta becomes kartą." },
+  { title: "Calling directly to someone", example: "Marek → Marku", meaning: "Marek, …", body: "When addressing someone directly, names can change form. Common patterns include Marku, Anno, Kasiu, and Piotrze. You will hear this constantly in friendly Polish." },
+  { title: "Because and therefore", example: "ponieważ · dlatego", meaning: "because · therefore", body: "Ponieważ introduces the reason. Dlatego introduces the result: zostałem w domu, ponieważ padało; padało, dlatego zostałem w domu." },
+  { title: "If opens a possibility", example: "Jeśli będzie ładnie…", meaning: "If the weather is nice…", body: "Jeśli starts a real condition. Follow it with the situation, then the result: jeśli mam czas, idę; jeśli będzie ciepło, pojedziemy." },
+  { title: "Finished or in progress", example: "robiłem · zrobiłem", meaning: "I was doing · I completed", body: "Polish often uses paired verbs to distinguish an activity from a completed result. Start with common pairs such as robić / zrobić and czytać / przeczytać." },
 ];
