@@ -3,6 +3,7 @@ const p = (polish, phonetic, english, tip = "") => ({ polish, phonetic, english,
 const rawUnits = [
   {
     title: "Your first Polish words",
+    slug: "first-words",
     eyebrow: "Start here",
     description: "Greet people, be polite, and handle the tiny exchanges that happen all day.",
     icon: "👋",
@@ -22,6 +23,7 @@ const rawUnits = [
   },
   {
     title: "Meet someone",
+    slug: "meet-someone",
     eyebrow: "Conversation 01",
     description: "Say your name, ask theirs, and share where you are from.",
     icon: "🤝",
@@ -42,6 +44,7 @@ const rawUnits = [
   },
   {
     title: "Coffee and a quick bite",
+    slug: "cafe",
     eyebrow: "Conversation 02",
     description: "Order confidently, ask for what you need, and pay at a café.",
     icon: "☕",
@@ -62,6 +65,7 @@ const rawUnits = [
   },
   {
     title: "Find your way",
+    slug: "directions",
     eyebrow: "Everyday survival",
     description: "Ask where something is, understand directions, and use public transport.",
     icon: "🧭",
@@ -82,6 +86,7 @@ const rawUnits = [
   },
   {
     title: "Shops and money",
+    slug: "shopping",
     eyebrow: "Conversation 03",
     description: "Ask prices, find your size, and understand the checkout.",
     icon: "🛍️",
@@ -102,6 +107,7 @@ const rawUnits = [
   },
   {
     title: "Time and making plans",
+    slug: "time-plans",
     eyebrow: "Conversation 04",
     description: "Ask the time, choose a day, and arrange to meet.",
     icon: "🗓️",
@@ -111,7 +117,7 @@ const rawUnits = [
       p("Jest trzecia", "yest TSHEH-chah", "It's three o'clock"),
       p("Dzisiaj", "JEE-shy", "Today"),
       p("Jutro", "YOO-troh", "Tomorrow"),
-      p("Wczoraj", "FCHO-ry", "Yesterday"),
+      p("Wczoraj", "FCHO-rai", "Yesterday"),
       p("Masz czas wieczorem?", "mahsh chahs vyeh-CHO-rem", "Are you free this evening?"),
       p("Spotkamy się o siódmej?", "spot-KAH-mih sheh oh SHOOD-mey", "Shall we meet at seven?"),
       p("Pasuje mi", "pah-SOO-yeh mee", "That works for me"),
@@ -122,6 +128,7 @@ const rawUnits = [
   },
   {
     title: "People and home",
+    slug: "people-home",
     eyebrow: "Build connection",
     description: "Talk simply about family, friends, and where you live.",
     icon: "🏠",
@@ -142,12 +149,13 @@ const rawUnits = [
   },
   {
     title: "Eat out with confidence",
+    slug: "restaurant",
     eyebrow: "Conversation 05",
     description: "Choose a meal, explain preferences, and handle common restaurant questions.",
     icon: "🥟",
     time: 21,
     phrases: [
-      p("Stolik dla dwóch osób", "STOH-leek dlah dvooh OH-soob", "A table for two"),
+      p("Stolik dla dwóch osób", "STOH-leek dlah dvookh OH-soop", "A table for two"),
       p("Co to jest?", "tsoh toh yest", "What is this?"),
       p("Co pan poleca?", "tsoh pahn poh-LEH-tsah", "What do you recommend?"),
       p("Jestem wegetarianinem", "YES-tem veh-geh-tah-RYAH-nee-nem", "I'm vegetarian (male)"),
@@ -162,6 +170,7 @@ const rawUnits = [
   },
   {
     title: "When you need help",
+    slug: "help",
     eyebrow: "Essential Polish",
     description: "Say what is wrong, ask for help, and understand urgent basics.",
     icon: "🩹",
@@ -171,7 +180,7 @@ const rawUnits = [
       p("Potrzebuję pomocy", "poh-tsheh-BOO-yeh poh-MOH-tsih", "I need help"),
       p("Nie rozumiem", "nyeh roh-ZOO-myem", "I don't understand"),
       p("Proszę mówić wolniej", "PROH-sheh MOO-veetch VOL-nyey", "Please speak more slowly"),
-      p("Proszę powtórzyć", "PROH-sheh poh-TOO-zhitch", "Please repeat"),
+      p("Proszę powtórzyć", "PROH-sheh pof-TOO-zhitch", "Please repeat"),
       p("Czy mówi pan po angielsku?", "chih MOO-vee pahn poh an-GYEL-skoo", "Do you speak English?"),
       p("Źle się czuję", "zhleh sheh CHOO-yeh", "I feel unwell"),
       p("Boli mnie głowa", "BOH-lee mnyeh GWOH-vah", "My head hurts"),
@@ -182,6 +191,7 @@ const rawUnits = [
   },
   {
     title: "Small talk that feels natural",
+    slug: "small-talk",
     eyebrow: "Conversation 06",
     description: "Chat about the day, weather, interests, and weekend plans.",
     icon: "🌤️",
@@ -202,13 +212,14 @@ const rawUnits = [
   },
   {
     title: "Work and study",
+    slug: "work-study",
     eyebrow: "Everyday identity",
     description: "Explain what you do and keep a simple conversation going.",
     icon: "💻",
     time: 20,
     phrases: [
       p("Czym się zajmujesz?", "chim sheh zy-MOO-yesh", "What do you do?"),
-      p("Pracuję w finansach", "prah-TSOO-yeh v fee-NAHN-sahh", "I work in finance"),
+      p("Pracuję w finansach", "prah-TSOO-yeh v fee-NAHN-sahkh", "I work in finance"),
       p("Studiuję", "stoo-DYOO-yeh", "I study / I'm a student"),
       p("Pracuję z domu", "prah-TSOO-yeh z DOH-moo", "I work from home"),
       p("Mam dziś dużo pracy", "mahm jeesh DOO-zhoh PRAH-tsih", "I have lots of work today"),
@@ -222,6 +233,7 @@ const rawUnits = [
   },
   {
     title: "Sound more natural",
+    slug: "natural-reactions",
     eyebrow: "Confidence builder",
     description: "React, clarify, and keep going even when your Polish is still small.",
     icon: "✨",
@@ -242,20 +254,83 @@ const rawUnits = [
     ],
     grammar: "Conversation is not a test. Short reactions such as naprawdę?, jasne, and świetnie buy you thinking time and make an exchange feel warmer.",
   },
+  {
+    title: "Numbers and prices",
+    slug: "numbers",
+    eyebrow: "Everyday essentials",
+    description: "Count to ten, catch a price, and hand over the right money.",
+    icon: "🔢",
+    time: 16,
+    phrases: [
+      p("Jeden", "YEH-den", "One"),
+      p("Dwa", "dvah", "Two", "Before feminine nouns it becomes dwie: dwie kawy."),
+      p("Trzy", "tshih", "Three"),
+      p("Cztery", "CHTEH-rih", "Four"),
+      p("Pięć", "pyench", "Five", "The ę is nasal — let a little air escape through your nose."),
+      p("Sześć", "sheshch", "Six"),
+      p("Siedem", "SHEH-dem", "Seven"),
+      p("Osiem", "OH-shem", "Eight"),
+      p("Dziewięć", "JEH-vyench", "Nine"),
+      p("Dziesięć", "JEH-shench", "Ten"),
+      p("Ile płacę?", "EE-leh PWAH-tseh", "How much do I pay?", "Perfect at any till when you missed the number."),
+      p("To kosztuje dziesięć złotych", "toh kosh-TOO-yeh JEH-shench ZWOH-tih", "It costs ten zloty"),
+    ],
+    grammar: "Money endings follow the numbers: jeden złoty, dwa/trzy/cztery złote, and from five up złotych — pięć złotych. Catch the pattern from prices you hear rather than memorising the rule.",
+  },
+  {
+    title: "Days and plans",
+    slug: "days",
+    eyebrow: "Conversation 07",
+    description: "Name the days of the week and pin a plan to one of them.",
+    icon: "📅",
+    time: 15,
+    phrases: [
+      p("Poniedziałek", "poh-nyeh-JAH-wek", "Monday"),
+      p("Wtorek", "FTOH-rek", "Tuesday"),
+      p("Środa", "SHROH-dah", "Wednesday"),
+      p("Czwartek", "CHVAR-tek", "Thursday"),
+      p("Piątek", "PYON-tek", "Friday"),
+      p("Sobota", "soh-BOH-tah", "Saturday"),
+      p("Niedziela", "nyeh-JEH-lah", "Sunday", "Also the word for Sunday shops being closed — most are, in Poland."),
+      p("Jaki dziś dzień?", "YAH-kee jeesh jen", "What day is it today?"),
+      p("W piątek wieczorem", "f PYON-tek vyeh-CHO-rem", "On Friday evening"),
+      p("Do zobaczenia w sobotę!", "doh zoh-bah-CHEN-yah f soh-BOH-teh", "See you on Saturday!"),
+    ],
+    grammar: "W turns a day into on that day: w piątek — on Friday, w sobotę — on Saturday. Only Tuesday adds a letter for easier pronunciation: we wtorek.",
+  },
 ];
+
+const POLISH_ASCII = { ą: "a", ć: "c", ę: "e", ł: "l", ń: "n", ó: "o", ś: "s", ź: "z", ż: "z" };
+
+const slugify = (text) => text
+  .toLowerCase()
+  .replace(/[ąćęłńóśźż]/g, (letter) => POLISH_ASCII[letter])
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-|-$/g, "");
 
 export const units = rawUnits.map((unit, unitIndex) => ({
   ...unit,
-  id: `unit-${unitIndex + 1}`,
+  id: unit.slug,
   number: unitIndex + 1,
-  phrases: unit.phrases.map((phrase, phraseIndex) => ({
+  phrases: unit.phrases.map((phrase) => ({
     ...phrase,
-    id: `u${unitIndex + 1}-p${phraseIndex + 1}`,
-    unitId: `unit-${unitIndex + 1}`,
+    id: `${unit.slug}-${slugify(phrase.polish)}`,
+    unitId: unit.slug,
   })),
 }));
 
 export const allPhrases = units.flatMap((unit) => unit.phrases);
+
+// Saved progress from before units had slugs used positional ids ("unit-3", "u3-p2").
+// Built from the current order, so it stays correct only while the v1-era units and
+// their phrases keep their relative positions. Append new content freely; if old
+// content must move, freeze this map to literal values first.
+export const legacyIdMap = Object.fromEntries(
+  units.flatMap((unit, unitIndex) => [
+    [`unit-${unitIndex + 1}`, unit.id],
+    ...unit.phrases.map((phrase, phraseIndex) => [`u${unitIndex + 1}-p${phraseIndex + 1}`, phrase.id]),
+  ]),
+);
 
 export const soundLessons = [
   { sound: "CZ", like: "ch in ‘chair’", examples: ["cześć", "czas", "czuję"], tip: "One clean ‘ch’ sound. Do not add a separate t." },
@@ -270,6 +345,12 @@ export const soundLessons = [
   { sound: "Ą / Ę", like: "nasal on / en", examples: ["są", "dziękuję", "wezmę"], tip: "Air partly passes through the nose; the exact sound shifts before consonants." },
   { sound: "Y", like: "i in ‘bit’, but deeper", examples: ["ty", "dobry", "wszystko"], tip: "Keep the tongue relaxed and central; it is never English ee." },
   { sound: "R", like: "a quick tapped r", examples: ["rano", "proszę", "drogo"], tip: "Aim for one fast tongue tap. A full roll is optional for clarity." },
+  { sound: "DŹ / DZI", like: "a soft j, as in ‘jeans’", examples: ["dziękuję", "dzień", "gdzie"], tip: "The voiced twin of ć/ci — smile slightly and keep it gentle." },
+  { sound: "DZ", like: "ds in ‘pods’", examples: ["bardzo", "widzenia", "dzwonić"], tip: "One fused sound, not d then z. Say it as a single buzz." },
+  { sound: "DŻ", like: "j in ‘jam’", examples: ["dżem", "dżungla", "drzwi"], tip: "Harder and darker than dź. The spelling drz usually sounds the same." },
+  { sound: "CH / H", like: "h in ‘hat’, but stronger", examples: ["chyba", "słychać", "herbata"], tip: "Both spellings make one sound — rougher than an English h, from the back of the mouth." },
+  { sound: "Ń / NI", like: "ny in ‘canyon’", examples: ["dzień", "nie", "niedziela"], tip: "Press the middle of the tongue toward the roof. It often ends words, as in dzień." },
+  { sound: "Ó", like: "oo in ‘boot’", examples: ["mój", "siódmej", "góra"], tip: "Ó and u sound identical in modern Polish — both are a clean oo." },
 ];
 
 export const dialogues = [
@@ -339,8 +420,8 @@ export const dialogues = [
     title: "At a restaurant",
     setting: "You order dinner and ask about a dish.",
     lines: [
-      { speaker: "Server", polish: "Dobry wieczór. Stolik dla ilu osób?", phonetic: "DOH-brih VYEH-choor. STOH-leek dlah EE-loo OH-soob?", english: "Good evening. A table for how many?", choices: [
-        { polish: "Dla dwóch osób, proszę.", phonetic: "dlah dvooh OH-soob PROH-sheh", english: "For two people, please.", good: true },
+      { speaker: "Server", polish: "Dobry wieczór. Stolik dla ilu osób?", phonetic: "DOH-brih VYEH-choor. STOH-leek dlah EE-loo OH-soop?", english: "Good evening. A table for how many?", choices: [
+        { polish: "Dla dwóch osób, proszę.", phonetic: "dlah dvookh OH-soop PROH-sheh", english: "For two people, please.", good: true },
         { polish: "Jeden bilet.", phonetic: "YEH-den BEE-let", english: "One ticket.", good: false },
       ] },
       { speaker: "Server", polish: "Czy są państwo gotowi?", phonetic: "chih song PINE-stvoh goh-TOH-vee?", english: "Are you ready to order?", choices: [
@@ -350,6 +431,46 @@ export const dialogues = [
       { speaker: "Server", polish: "Polecam pierogi.", phonetic: "poh-LEH-tsahm pyeh-ROH-gee", english: "I recommend pierogi.", choices: [
         { polish: "Świetnie. Poproszę pierogi.", phonetic: "SHVYET-nyeh. poh-PROH-sheh pyeh-ROH-gee", english: "Great. Pierogi, please.", good: true },
         { polish: "Poproszę aptekę.", phonetic: "poh-PROH-sheh ap-TEH-keh", english: "A pharmacy, please.", good: false },
+      ] },
+    ],
+  },
+  {
+    id: "tickets",
+    icon: "🎫",
+    title: "Buying a ticket",
+    setting: "At the ticket window in a train station.",
+    lines: [
+      { speaker: "Clerk", polish: "Dzień dobry. Słucham?", phonetic: "jen DOH-brih. SWOO-hahm?", english: "Good morning. How can I help?", choices: [
+        { polish: "Jeden bilet do Warszawy, proszę.", phonetic: "YEH-den BEE-let doh var-SHAH-vih PROH-sheh", english: "One ticket to Warsaw, please.", good: true },
+        { polish: "To jest pyszne!", phonetic: "toh yest PISH-neh", english: "This is delicious!", good: false },
+      ] },
+      { speaker: "Clerk", polish: "Dziesięć złotych.", phonetic: "JEH-shench ZWOH-tih", english: "Ten zloty.", choices: [
+        { polish: "Kartą, proszę.", phonetic: "KAR-tong PROH-sheh", english: "By card, please.", good: true },
+        { polish: "Miłego weekendu!", phonetic: "mee-WEH-goh vee-KEN-doo", english: "Have a nice weekend!", good: false },
+      ] },
+      { speaker: "Clerk", polish: "Proszę, oto bilet. Peron drugi.", phonetic: "PROH-sheh, OH-toh BEE-let. PEH-ron DROO-gee", english: "Here is your ticket. Platform two.", choices: [
+        { polish: "Dziękuję bardzo. Do widzenia!", phonetic: "jen-KOO-yeh BAR-dzoh. doh vee-DZEN-yah", english: "Thank you very much. Goodbye!", good: true },
+        { polish: "Za drogo.", phonetic: "zah DROH-goh", english: "Too expensive.", good: false },
+      ] },
+    ],
+  },
+  {
+    id: "pharmacy",
+    icon: "💊",
+    title: "At the pharmacy",
+    setting: "You need something for a headache.",
+    lines: [
+      { speaker: "Pharmacist", polish: "Dzień dobry. W czym mogę pomóc?", phonetic: "jen DOH-brih. f chim MOH-geh POH-moots?", english: "Good morning. How can I help?", choices: [
+        { polish: "Boli mnie głowa. Czy jest coś na to?", phonetic: "BOH-lee mnyeh GWOH-vah. chih yest tsosh nah toh?", english: "My head hurts. Is there something for it?", good: true },
+        { polish: "Poproszę pierogi.", phonetic: "poh-PROH-sheh pyeh-ROH-gee", english: "Pierogi, please.", good: false },
+      ] },
+      { speaker: "Pharmacist", polish: "Tak, proszę. To jest dobre na ból głowy.", phonetic: "tahk, PROH-sheh. toh yest DOH-breh nah bool GWOH-vih", english: "Yes, here you are. This is good for a headache.", choices: [
+        { polish: "Dziękuję. Ile płacę?", phonetic: "jen-KOO-yeh. EE-leh PWAH-tseh?", english: "Thank you. How much do I pay?", good: true },
+        { polish: "W lewo.", phonetic: "v LEH-voh", english: "To the left.", good: false },
+      ] },
+      { speaker: "Pharmacist", polish: "Piętnaście złotych.", phonetic: "pyent-NAHSH-cheh ZWOH-tih", english: "Fifteen zloty.", choices: [
+        { polish: "Proszę. Do widzenia!", phonetic: "PROH-sheh. doh vee-DZEN-yah", english: "Here you are. Goodbye!", good: true },
+        { polish: "Smacznego!", phonetic: "smach-NEH-goh", english: "Enjoy your meal!", good: false },
       ] },
     ],
   },
@@ -366,4 +487,8 @@ export const grammarGuides = [
   { title: "Where things are", example: "Gdzie jest…?", meaning: "Where is…?", body: "A high-value frame. Add toaleta, dworzec, hotel, bank, apteka, or any place you need." },
   { title: "A useful past–present–future trio", example: "wczoraj · dzisiaj · jutro", meaning: "yesterday · today · tomorrow", body: "These time words can make even a basic sentence much clearer." },
   { title: "Stress is predictable", example: "dzię-KU-ję · po-PRO-szę", meaning: "stress the second-last syllable", body: "Polish stress usually falls on the penultimate syllable. Capital letters in our sound guides mark the beat." },
+  { title: "The extra-polite wish", example: "Chciałbym kawę", meaning: "I would like a coffee (a woman says chciałabym)", body: "One step softer than poproszę — perfect for requests that feel bigger than ordering. The -a- in chciałabym marks a female speaker." },
+  { title: "Saying you have", example: "Mam czas", meaning: "I have time", body: "Mam is one of the most reusable verbs in Polish: mam brata, mam spotkanie, mam pytanie. Even mam na imię is literally ‘I have as a name’." },
+  { title: "Counting money", example: "dwa złote · pięć złotych", meaning: "two zloty · five zloty", body: "After 2, 3, and 4 say złote; from 5 upwards say złotych. Listen for the pattern in prices instead of memorising the table." },
+  { title: "On Friday, in the evening", example: "w piątek wieczorem", meaning: "on Friday evening", body: "W plus a day means on that day: w sobotę, w niedzielę. Times of day like rano and wieczorem need no extra word at all." },
 ];

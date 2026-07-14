@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -31,7 +31,7 @@ import {
   Zap,
 } from "lucide-react";
 import { allPhrases, dialogues, grammarGuides, soundLessons, units } from "./data/course.js";
-import { addStudy, loadProgress, saveProgress, shuffled, similarity } from "./lib/learning.js";
+import { addStudy, buildReviewDeck, effectiveStreak, loadProgress, saveProgress, shuffled, similarity, weekActivity } from "./lib/learning.js";
 import { listenForPolish, speakPolish } from "./lib/speech.js";
 
 const NAV_ITEMS = [
@@ -45,11 +45,20 @@ const NAV_ITEMS = [
 
 function AudioButton({ text, label = "Hear Polish", compact = false, rate = 0.82 }) {
   const [playing, setPlaying] = useState(false);
+  const timeoutRef = useRef(null);
+
+  useEffect(() => () => window.clearTimeout(timeoutRef.current), []);
 
   const play = () => {
+    if (playing) {
+      window.speechSynthesis?.cancel();
+      window.clearTimeout(timeoutRef.current);
+      setPlaying(false);
+      return;
+    }
     setPlaying(true);
     speakPolish(text, rate);
-    window.setTimeout(() => setPlaying(false), Math.max(800, text.length * 65));
+    timeoutRef.current = window.setTimeout(() => setPlaying(false), Math.max(800, text.length * 65));
   };
 
   return (
@@ -159,7 +168,7 @@ function PronunciationCard({ phrase, onComplete, extended = false }) {
   );
 }
 
-function HomeView({ progress, onNavigate, onOpenUnit, award }) {
+function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal }) {
   const nextUnit = units.find((unit) => !progress.completedUnits.includes(unit.id)) || units[units.length - 1];
   const coursePercent = Math.round((progress.completedUnits.length / units.length) * 100);
   const dailyPercent = Math.round((progress.todayMinutes / progress.dailyGoal) * 100);
@@ -175,7 +184,7 @@ function HomeView({ progress, onNavigate, onOpenUnit, award }) {
           <p>Small, useful steps. Speak from day one and let the endings come later.</p>
         </div>
         <div className="header-stats">
-          <StatPill icon={Flame} value={progress.streak} label="day streak" tone="orange" />
+          <StatPill icon={Flame} value={effectiveStreak(progress)} label="day streak" tone="orange" />
           <StatPill icon={Zap} value={progress.xp} label="total XP" tone="yellow" />
         </div>
       </section>
@@ -204,6 +213,11 @@ function HomeView({ progress, onNavigate, onOpenUnit, award }) {
           <div className="goal-main">
             <ProgressRing value={dailyPercent} size={112} stroke={10}><strong>{Math.min(progress.todayMinutes, progress.dailyGoal)}</strong><span>of {progress.dailyGoal} min</span></ProgressRing>
             <div className="goal-copy"><strong>{dailyPercent >= 100 ? "Goal complete!" : `${Math.max(0, progress.dailyGoal - progress.todayMinutes)} minutes to go`}</strong><p>A short session is enough to make today count.</p></div>
+          </div>
+          <div className="goal-presets" role="group" aria-label="Set daily goal in minutes">
+            {[10, 15, 20, 30].map((minutes) => (
+              <button key={minutes} className={progress.dailyGoal === minutes ? "active" : ""} onClick={() => onSetGoal(minutes)}>{minutes} min</button>
+            ))}
           </div>
           <button className="secondary-button full" onClick={() => onNavigate("practice")}>Quick 5-minute review <ArrowRight size={17} /></button>
         </article>
@@ -366,6 +380,7 @@ function PracticeView({ progress, award }) {
     { id: "flashcards", label: "Flashcards", icon: RotateCcw, hint: "Recall meanings" },
     { id: "listen", label: "Listen", icon: Headphones, hint: "Train your ear" },
     { id: "builder", label: "Build it", icon: Languages, hint: "Make sentences" },
+    { id: "speak", label: "Speak", icon: Mic, hint: "Pronunciation reps" },
   ];
 
   return (
@@ -377,21 +392,19 @@ function PracticeView({ progress, award }) {
       {mode === "flashcards" && <Flashcards progress={progress} award={award} />}
       {mode === "listen" && <ListeningQuiz award={award} />}
       {mode === "builder" && <SentenceBuilder award={award} />}
+      {mode === "speak" && <SpeakPractice progress={progress} award={award} />}
     </div>
   );
 }
 
 function Flashcards({ progress, award }) {
-  const deck = useMemo(() => {
-    const learned = allPhrases.filter((phrase) => progress.learnedPhrases.includes(phrase.id));
-    return shuffled(learned.length >= 5 ? learned : allPhrases.slice(0, 30)).slice(0, 12);
-  }, [progress.learnedPhrases.length]);
+  const [deck] = useState(() => buildReviewDeck(progress, 12));
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const phrase = deck[index % deck.length];
 
   const rate = (known) => {
-    award({ xp: known ? 5 : 2, minutes: index % 3 === 0 ? 1 : 0, phraseId: phrase.id, review: true }, known ? "+5 XP · Nailed it" : "+2 XP · Back in the deck");
+    award({ xp: known ? 5 : 2, minutes: index % 3 === 0 ? 1 : 0, phraseId: phrase.id, review: true, phraseResult: known }, known ? "+5 XP · Nailed it" : "+2 XP · Back in the deck");
     setIndex((current) => current + 1);
     setFlipped(false);
   };
@@ -429,10 +442,11 @@ function ListeningQuiz({ award }) {
 
   const choose = (option) => {
     setAnswer(option.id);
-    if (option.id === round.phrase.id) award({ xp: 8, minutes: 1, phraseId: round.phrase.id, review: true }, "+8 XP · Your ear is working");
+    if (option.id === round.phrase.id) award({ xp: 8, minutes: 1, phraseId: round.phrase.id, review: true, phraseResult: true }, "+8 XP · Your ear is working");
+    else award({ phraseId: round.phrase.id, review: true, phraseResult: false });
   };
 
-  const next = () => { setRound(makeListeningRound()); setAnswer(null); };
+  const next = () => { setRound(makeListeningRound(round.phrase.id)); setAnswer(null); };
   const correct = answer === round.phrase.id;
 
   return (
@@ -453,8 +467,9 @@ function ListeningQuiz({ award }) {
   );
 }
 
-function makeListeningRound() {
-  const phrase = allPhrases[Math.floor(Math.random() * allPhrases.length)];
+function makeListeningRound(excludeId) {
+  const pool = allPhrases.filter((item) => item.id !== excludeId);
+  const phrase = pool[Math.floor(Math.random() * pool.length)];
   const distractors = shuffled(allPhrases.filter((item) => item.id !== phrase.id && item.english !== phrase.english)).slice(0, 3);
   return { phrase, options: shuffled([phrase, ...distractors]) };
 }
@@ -477,7 +492,8 @@ function SentenceBuilder({ award }) {
   };
   const check = () => {
     setChecked(true);
-    if (correct) award({ xp: 10, minutes: 1, phraseId: phrase.id, review: true }, "+10 XP · Sentence built");
+    if (correct) award({ xp: 10, minutes: 1, phraseId: phrase.id, review: true, phraseResult: true }, "+10 XP · Sentence built");
+    else award({ phraseId: phrase.id, review: true, phraseResult: false });
   };
 
   return (
@@ -495,6 +511,22 @@ function SentenceBuilder({ award }) {
 
 function makeTokens(phrase) {
   return shuffled(phrase.polish.replace(/[.,!?]$/g, "").split(" ").map((word, index) => ({ word, key: `${word}-${index}` })));
+}
+
+function SpeakPractice({ progress, award }) {
+  const [deck] = useState(() => buildReviewDeck(progress, 10));
+  const [index, setIndex] = useState(0);
+  const phrase = deck[index % deck.length];
+
+  return (
+    <section className="practice-stage">
+      <div className="practice-topline"><span>Phrase {(index % deck.length) + 1} of {deck.length}</span><div className="mini-progress"><span style={{ width: `${(((index % deck.length) + 1) / deck.length) * 100}%` }} /></div><span>Listen, then speak</span></div>
+      <PronunciationCard phrase={phrase} extended onComplete={() => award({ xp: 8, minutes: 1, phraseId: phrase.id, review: true, phraseResult: true }, "+8 XP · Clearly said")} />
+      <div className="builder-actions">
+        <button className="primary-button" onClick={() => setIndex((current) => current + 1)}>Next phrase <ArrowRight size={17} /></button>
+      </div>
+    </section>
+  );
 }
 
 function SoundsView({ award }) {
@@ -621,8 +653,8 @@ function App() {
           {NAV_ITEMS.map(({ id, label, icon: Icon }, index) => <button key={id} className={view === id ? "active" : ""} onClick={() => navigate(id)}><Icon size={20} /><span>{label}</span>{index === 2 && progress.totalReviews > 0 && <small className="nav-badge">{progress.totalReviews}</small>}</button>)}
         </nav>
         <div className="sidebar-card">
-          <div className="sidebar-card-top"><Flame size={23} /><span><strong>{progress.streak} day streak</strong><small>Keep showing up</small></span></div>
-          <div className="week-dots">{["M","T","W","T","F","S","S"].map((day, index) => <span key={`${day}-${index}`} className={index < Math.min(progress.streak, 7) ? "active" : ""}>{index < Math.min(progress.streak, 7) ? <Check size={12} /> : day}</span>)}</div>
+          <div className="sidebar-card-top"><Flame size={23} /><span><strong>{effectiveStreak(progress)} day streak</strong><small>{effectiveStreak(progress) ? "Keep showing up" : "Start today"}</small></span></div>
+          <div className="week-dots">{weekActivity(progress.studyDates).map(({ label, done, today }, index) => <span key={`${label}-${index}`} className={done ? "active" : today ? "today" : ""}>{done ? <Check size={12} /> : label}</span>)}</div>
         </div>
         <p className="sidebar-footnote">Mów od pierwszego dnia.<br />Speak from day one.</p>
       </aside>
@@ -632,7 +664,7 @@ function App() {
       <div className="app-main">
         <header className="mobile-header"><button className="icon-button" onClick={() => setNavOpen(true)} aria-label="Open navigation"><Menu /></button><div className="mobile-brand"><span>Cz</span><strong>{currentLabel}</strong></div><span className="mobile-xp"><Zap size={16} /> {progress.xp}</span></header>
         <main className="content">
-          {view === "home" && <HomeView progress={progress} onNavigate={navigate} onOpenUnit={setActiveUnit} award={award} />}
+          {view === "home" && <HomeView progress={progress} onNavigate={navigate} onOpenUnit={setActiveUnit} award={award} onSetGoal={(minutes) => setProgress((current) => ({ ...current, dailyGoal: minutes }))} />}
           {view === "course" && <CourseView progress={progress} onOpenUnit={setActiveUnit} />}
           {view === "practice" && <PracticeView progress={progress} award={award} />}
           {view === "sounds" && <SoundsView award={award} />}
