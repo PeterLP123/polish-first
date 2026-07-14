@@ -51,9 +51,39 @@ describe("guided learning flow", () => {
 
   it("moves keyboard focus to the destination heading after navigation", async () => {
     render(<App />);
-    fireEvent.click(screen.getAllByRole("button", { name: /^progress & data$/i })[1]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^progress & data$/i })[0]);
     const heading = await screen.findByRole("heading", { name: /your learning stays yours/i });
     expect(heading).toHaveFocus();
     expect(document.title).toBe("Progress & Data · Cześć!");
+  });
+
+  it("explains the memory system until the first phrase is learned", async () => {
+    render(<App />);
+    expect(screen.getByText(/come back right before you would forget them/i)).toBeInTheDocument();
+    expect(screen.queryByText("Due now")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /learn your first phrases/i }));
+    expect(await screen.findByText(/step 1 of 11/i)).toBeInTheDocument();
+  });
+
+  it("reaches overflow sections through the bottom-nav More sheet", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /^more$/i }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /grammar/i }));
+    expect(await screen.findByRole("heading", { name: /patterns, not paperwork/i })).toBeInTheDocument();
+    expect(document.title).toBe("Grammar · Cześć!");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("groups the course into stage sections with only the frontier stage open", async () => {
+    window.location.hash = "#course";
+    render(<App />);
+    const starterHeader = await screen.findByRole("button", { name: /stage 1 · .*starter/i });
+    expect(starterHeader).toHaveAttribute("aria-expanded", "true");
+    const everydayHeader = screen.getByRole("button", { name: /stage 2 · .*everyday/i });
+    expect(everydayHeader).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(everydayHeader);
+    expect(everydayHeader).toHaveAttribute("aria-expanded", "true");
   });
 });

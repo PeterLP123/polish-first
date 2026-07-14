@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  Brain,
   Check,
   ChevronRight,
   CircleHelp,
@@ -129,12 +131,22 @@ function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal, onStartS
         </article>
       </section>
 
-      <section className="mastery-strip panel" aria-label="Memory progress">
-        <div><strong>{mastery.due}</strong><span>Due now</span></div>
-        <div><strong>{mastery.learning}</strong><span>Learning</span></div>
-        <div><strong>{mastery.mastered}</strong><span>Mastered</span></div>
-        <button className="secondary-button" onClick={() => onNavigate("data")}>Progress & data <ArrowRight size={16} /></button>
-      </section>
+      {mastery.due + mastery.learning + mastery.mastered === 0 ? (
+        <section className="mastery-strip panel empty" aria-label="How the memory system works">
+          <div className="mastery-teaser">
+            <span className="mastery-teaser-icon" aria-hidden="true"><Brain size={21} /></span>
+            <div><strong>Phrases you learn come back right before you would forget them.</strong><span>First review tomorrow, then two days, then longer. A 30-day gap counts as mastered.</span></div>
+          </div>
+          <button className="secondary-button" onClick={onStartSession}>Learn your first phrases <ArrowRight size={16} /></button>
+        </section>
+      ) : (
+        <section className="mastery-strip panel" aria-label="Memory progress">
+          <div><strong>{mastery.due}</strong><span>Due now</span></div>
+          <div><strong>{mastery.learning}</strong><span>Learning</span></div>
+          <div><strong>{mastery.mastered}</strong><span>Mastered</span></div>
+          <button className="secondary-button" onClick={() => onNavigate("data")}>Progress & data <ArrowRight size={16} /></button>
+        </section>
+      )}
 
       <section className="section-heading-row">
         <div><span className="eyebrow">SAY IT OUT LOUD</span><h2>Phrase of the day</h2></div>
@@ -169,16 +181,66 @@ function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal, onStartS
   );
 }
 
+function UnitCard({ unit, progress, onOpenUnit, highlight = false }) {
+  const done = progress.completedUnits.includes(unit.id);
+  const learned = unit.phrases.filter((phrase) => progress.learnedPhrases.includes(phrase.id)).length;
+  const percent = Math.round((learned / unit.phrases.length) * 100);
+  return (
+    <article className={`unit-card ${done ? "completed" : ""} ${highlight ? "frontier-highlight" : ""}`} id={`unit-card-${unit.id}`}>
+      <div className="unit-card-top">
+        <span className="unit-index">{done ? <Check size={18} /> : String(unit.number).padStart(2, "0")}</span>
+        <span className="unit-art">{unit.icon}</span>
+        {done && <span className="complete-label">Complete</span>}
+      </div>
+      <div className="unit-tags"><small>{unit.topic}</small><span>{unit.stage}</span></div>
+      <h2>{unit.title}</h2>
+      <p>{unit.description}</p>
+      <div className="unit-progress"><span style={{ width: `${done ? 100 : percent}%` }} /></div>
+      <div className="unit-footer"><span><Headphones size={15} /> {unit.phrases.length} phrases</span><span>{unit.time} min</span></div>
+      <button className={done ? "secondary-button full" : "primary-button full"} onClick={() => onOpenUnit(unit)}>
+        {done ? "Practise again" : percent ? "Continue unit" : "Start unit"}<ArrowRight size={17} />
+      </button>
+    </article>
+  );
+}
+
+const COURSE_STAGES = [...new Set(units.map((unit) => unit.stage))];
+
 function CourseView({ progress, onOpenUnit }) {
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("All");
   const nextUnit = units.find((unit) => !progress.completedUnits.includes(unit.id)) || units[units.length - 1];
+  const [openStages, setOpenStages] = useState(() => new Set([nextUnit.stage]));
+  const [showChip, setShowChip] = useState(false);
+  const [highlightId, setHighlightId] = useState(null);
   const normalizedQuery = query.trim().toLocaleLowerCase("pl");
+  const filtering = Boolean(normalizedQuery) || topic !== "All";
   const visibleUnits = units.filter((unit) => {
     const matchesTopic = topic === "All" || unit.topic === topic;
     const searchable = `${unit.title} ${unit.description} ${unit.topic} ${unit.phrases.map((phrase) => `${phrase.polish} ${phrase.english}`).join(" ")}`.toLocaleLowerCase("pl");
     return matchesTopic && (!normalizedQuery || searchable.includes(normalizedQuery));
   });
+
+  useEffect(() => {
+    const onScroll = () => setShowChip(window.scrollY > 600);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const toggleStage = (stage) => setOpenStages((current) => {
+    const next = new Set(current);
+    if (next.has(stage)) next.delete(stage);
+    else next.add(stage);
+    return next;
+  });
+
+  const jumpToFrontier = () => {
+    setOpenStages((current) => new Set(current).add(nextUnit.stage));
+    setHighlightId(nextUnit.id);
+    const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    window.setTimeout(() => document.getElementById(`unit-card-${nextUnit.id}`)?.scrollIntoView({ behavior, block: "center" }), 60);
+    window.setTimeout(() => setHighlightId(null), 2200);
+  };
 
   return (
     <div className="view-stack">
@@ -200,33 +262,46 @@ function CourseView({ progress, onOpenUnit }) {
         <div className="topic-filters" role="group" aria-label="Filter units by topic">
           {courseTopics.map((item) => <button key={item} className={topic === item ? "active" : ""} onClick={() => setTopic(item)} aria-pressed={topic === item}>{item}</button>)}
         </div>
-        <p className="course-result-count" aria-live="polite">Showing {visibleUnits.length} of {units.length} units</p>
+        {filtering && <p className="course-result-count" aria-live="polite">Showing {visibleUnits.length} of {units.length} units</p>}
       </section>
-      <div className="course-grid">
-        {visibleUnits.map((unit) => {
-          const done = progress.completedUnits.includes(unit.id);
-          const learned = unit.phrases.filter((phrase) => progress.learnedPhrases.includes(phrase.id)).length;
-          const percent = Math.round((learned / unit.phrases.length) * 100);
+      {filtering ? (
+        <div className="course-grid">
+          {visibleUnits.map((unit) => <UnitCard key={unit.id} unit={unit} progress={progress} onOpenUnit={onOpenUnit} />)}
+        </div>
+      ) : (
+        COURSE_STAGES.map((stage, stageIndex) => {
+          const stageUnits = units.filter((unit) => unit.stage === stage);
+          const doneCount = stageUnits.filter((unit) => progress.completedUnits.includes(unit.id)).length;
+          const stageDone = doneCount === stageUnits.length;
+          const open = openStages.has(stage);
+          const panelId = `stage-panel-${stageIndex}`;
           return (
-            <article className={`unit-card ${done ? "completed" : ""}`} key={unit.id}>
-              <div className="unit-card-top">
-                <span className="unit-index">{done ? <Check size={18} /> : String(unit.number).padStart(2, "0")}</span>
-                <span className="unit-art">{unit.icon}</span>
-                {done && <span className="complete-label">Complete</span>}
-              </div>
-              <div className="unit-tags"><small>{unit.topic}</small><span>{unit.stage}</span></div>
-              <h2>{unit.title}</h2>
-              <p>{unit.description}</p>
-              <div className="unit-progress"><span style={{ width: `${done ? 100 : percent}%` }} /></div>
-              <div className="unit-footer"><span><Headphones size={15} /> {unit.phrases.length} phrases</span><span>{unit.time} min</span></div>
-              <button className={done ? "secondary-button full" : "primary-button full"} onClick={() => onOpenUnit(unit)}>
-                {done ? "Practise again" : percent ? "Continue unit" : "Start unit"}<ArrowRight size={17} />
+            <section className={`stage-section ${open ? "open" : ""} ${stageDone ? "complete" : ""}`} key={stage}>
+              <button className="stage-header" aria-expanded={open} aria-controls={panelId} onClick={() => toggleStage(stage)}>
+                <span className="stage-index" aria-hidden="true">{stageDone ? <Check size={16} /> : String(stageIndex + 1).padStart(2, "0")}</span>
+                <span className="stage-copy"><small>STAGE {stageIndex + 1} · {stageUnits.length} UNITS</small><strong>{stage}</strong></span>
+                <span className="stage-meta">
+                  <span className="stage-count">{doneCount} of {stageUnits.length} complete</span>
+                  <span className="stage-progress" aria-hidden="true"><span style={{ width: `${Math.round((doneCount / stageUnits.length) * 100)}%` }} /></span>
+                </span>
+                <ChevronRight size={19} className="stage-chevron" aria-hidden="true" />
               </button>
-            </article>
+              {open && (
+                <div className="course-grid" id={panelId}>
+                  {stageUnits.map((unit) => <UnitCard key={unit.id} unit={unit} progress={progress} onOpenUnit={onOpenUnit} highlight={highlightId === unit.id} />)}
+                </div>
+              )}
+            </section>
           );
-        })}
-      </div>
-      {!visibleUnits.length && <section className="course-empty panel"><Search size={28} /><h2>No matching units</h2><p>Try a broader phrase or show every topic.</p><button className="secondary-button" onClick={() => { setQuery(""); setTopic("All"); }}>Clear filters</button></section>}
+        })
+      )}
+      {!filtering && showChip && createPortal(
+        <button className="frontier-chip" onClick={jumpToFrontier}>
+          <Play size={14} fill="currentColor" /> Up next · Unit {nextUnit.number}
+        </button>,
+        document.body,
+      )}
+      {filtering && !visibleUnits.length && <section className="course-empty panel"><Search size={28} /><h2>No matching units</h2><p>Try a broader phrase or show every topic.</p><button className="secondary-button" onClick={() => { setQuery(""); setTopic("All"); }}>Clear filters</button></section>}
     </div>
   );
 }
@@ -513,10 +588,11 @@ function App() {
   };
 
   const currentLabel = view === "session" ? "Daily session" : NAV_ITEMS.find((item) => item.id === view)?.label;
+  const dueCount = getDuePhrases(progress).length;
 
   return (
     <div className="app-shell">
-      <Sidebar view={view} progress={progress} open={navOpen} onNavigate={navigate} onClose={() => setNavOpen(false)} />
+      <Sidebar view={view} progress={progress} dueCount={dueCount} open={navOpen} onNavigate={navigate} onClose={() => setNavOpen(false)} />
 
       {navOpen && <button className="nav-scrim" onClick={() => setNavOpen(false)} aria-label="Close navigation" />}
 
@@ -534,7 +610,7 @@ function App() {
         </main>
       </div>
 
-      <BottomNav view={view} onNavigate={navigate} />
+      <BottomNav view={view} dueCount={dueCount} onNavigate={navigate} />
       {activeUnit && <UnitLesson unit={activeUnit} progress={progress} onClose={() => setActiveUnit(null)} award={award} />}
       {toast && <div className="toast" role="status" aria-live="polite"><Star size={17} fill="currentColor" /> {toast}</div>}
     </div>
