@@ -1,6 +1,8 @@
 import { buildActivities } from "./content/activities.js";
 import { expansionDialogues, expansionGrammarGuides } from "./content/expansion-extras.js";
 import { expansionUnits } from "./content/expansion.js";
+import { b1Dialogues, b1GrammarGuides, b1Units } from "./content/b1.js";
+import { fluencyDialogues, fluencyGrammarGuides, fluencyUnits } from "./content/fluency.js";
 import { makeContentCatalog, validateContentCatalog } from "./content/schema.js";
 
 const p = (polish, phonetic, english, tip = "") => ({ polish, phonetic, english, tip });
@@ -796,6 +798,8 @@ const legacyUnits = rawUnits.map((unit, unitIndex) => {
 export const units = [
   ...legacyUnits,
   ...expansionUnits.map((unit, index) => ({ ...unit, number: legacyUnits.length + index + 1 })),
+  ...b1Units.map((unit, index) => ({ ...unit, number: legacyUnits.length + expansionUnits.length + index + 1 })),
+  ...fluencyUnits.map((unit, index) => ({ ...unit, number: legacyUnits.length + expansionUnits.length + b1Units.length + index + 1 })),
 ];
 
 export const allPhrases = units.flatMap((unit) => unit.phrases);
@@ -1385,7 +1389,7 @@ const legacyDialogues = [
   ...advancedDialogues,
 ];
 
-export const dialogues = [...legacyDialogues, ...expansionDialogues];
+export const dialogues = [...legacyDialogues, ...expansionDialogues, ...b1Dialogues, ...fluencyDialogues];
 
 const legacyGrammarGuides = [
   { title: "A sentence without ‘I’", example: "(Ja) mówię po polsku", meaning: "I speak Polish", body: "The verb ending carries the person, so ja is usually optional. Use it for contrast or emphasis." },
@@ -1423,6 +1427,8 @@ const legacyGrammarGuides = [
 export const grammarGuides = [
   ...legacyGrammarGuides.map((guide) => ({ ...guide, id: `grammar-${slugify(guide.title)}` })),
   ...expansionGrammarGuides,
+  ...b1GrammarGuides,
+  ...fluencyGrammarGuides,
 ];
 
 export const { readings, writingItems, clozeItems, milestones } = buildActivities(units, dialogues, grammarGuides);

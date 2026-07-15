@@ -25,15 +25,15 @@ describe("course data integrity", () => {
   });
 
   it("ships a substantial, consistently tagged curriculum", () => {
-    expect(units).toHaveLength(57);
-    expect(allPhrases).toHaveLength(650);
-    expect(dialogues).toHaveLength(30);
+    expect(units).toHaveLength(81);
+    expect(allPhrases).toHaveLength(938);
+    expect(dialogues).toHaveLength(42);
     expect(soundLessons).toHaveLength(24);
-    expect(grammarGuides).toHaveLength(42);
-    expect(readings).toHaveLength(24);
-    expect(writingItems).toHaveLength(24);
-    expect(clozeItems).toHaveLength(42);
-    expect(milestones).toHaveLength(6);
+    expect(grammarGuides).toHaveLength(66);
+    expect(readings).toHaveLength(36);
+    expect(writingItems).toHaveLength(36);
+    expect(clozeItems).toHaveLength(66);
+    expect(milestones).toHaveLength(10);
     expect(courseTopics).toContain("All");
     units.forEach((unit) => {
       expect(unit.topic).toBeTruthy();
@@ -44,8 +44,8 @@ describe("course data integrity", () => {
   });
 
   it("builds one validated production catalogue with globally unique ids", () => {
-    expect(ContentCatalog.byId.size).toBe(57 + 650 + 30 + 24 + 42 + 24 + 24 + 42 + 6);
-    expect(() => validateCourseContent({ units: 57, phrases: 650, dialogues: 30, soundLessons: 24, grammarGuides: 42, readings: 24, writingItems: 24, milestones: 6 })).not.toThrow();
+    expect(ContentCatalog.byId.size).toBe(81 + 938 + 42 + 24 + 66 + 36 + 36 + 66 + 10);
+    expect(() => validateCourseContent({ units: 81, phrases: 938, dialogues: 42, soundLessons: 24, grammarGuides: 66, readings: 36, writingItems: 36, milestones: 10 })).not.toThrow();
   });
 
   it("gives every expansion unit exactly one reading or writing activity", () => {
@@ -57,6 +57,31 @@ describe("course data integrity", () => {
       expect(readings.filter((item) => item.stage === stage)).toHaveLength(6);
       expect(writingItems.filter((item) => item.stage === stage)).toHaveLength(6);
     }
+    for (const stage of ["B1 foundations", "B1 in action", "B1 confidence", "B2 bridge"]) {
+      expect(readings.filter((item) => item.stage === stage)).toHaveLength(3);
+      expect(writingItems.filter((item) => item.stage === stage)).toHaveLength(3);
+    }
+  });
+
+  it("adds authored B1 texts, writing tasks, and grammar links", () => {
+    const b1Units = units.filter((unit) => ["B1 foundations", "B1 in action"].includes(unit.stage));
+    expect(b1Units).toHaveLength(12);
+    expect(b1Units.every((unit) => unit.activity?.content)).toBe(true);
+    expect(readings.find((item) => item.unitId === "explaining-decisions").text.split(/\s+/).length).toBeGreaterThan(40);
+    expect(writingItems.find((item) => item.unitId === "formal-correspondence").requiredTokens).toContain("proszę");
+    expect(b1Units.flatMap((unit) => unit.phrases).every((phrase) => phrase.grammarIds.length === 1)).toBe(true);
+    expect(readings.filter((item) => item.stage.startsWith("B1")).every((item) => item.grammarIds.length === 1)).toBe(true);
+    expect(milestones.find((item) => item.stage === "B1 foundations").tasks.filter((task) => task.kind === "grammar").every((task) => task.itemId.includes("grammar-b1"))).toBe(true);
+  });
+
+  it("extends the course with connected fluency practice", () => {
+    const fluencyUnits = units.filter((unit) => ["B1 confidence", "B2 bridge"].includes(unit.stage));
+    expect(fluencyUnits).toHaveLength(12);
+    expect(fluencyUnits.flatMap((unit) => unit.phrases)).toHaveLength(144);
+    expect(fluencyUnits.every((unit) => unit.activity?.content && unit.grammarIds.length === 1)).toBe(true);
+    expect(readings.find((item) => item.unitId === "society-policy").questions).toHaveLength(3);
+    expect(writingItems.find((item) => item.unitId === "persuasive-proposals").requiredTokens).toContain("żeby");
+    expect(milestones.find((item) => item.stage === "B2 bridge").tasks.some((task) => task.itemId === "dialogue:negotiating-compromise")).toBe(true);
   });
 
   it("gives every dialogue five turns with multiple natural options", () => {

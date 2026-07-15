@@ -1,6 +1,6 @@
 # Cześć! — Polish for real life
 
-A conversational, pronunciation-first Polish course for complete beginners. It runs entirely in the browser and saves learning progress locally.
+A conversational, pronunciation-first Polish course that grows from complete-beginner survival language through confident B1 communication and towards a practical B2 bridge. It runs entirely in the browser and saves learning progress locally.
 
 ## Start the app
 
@@ -15,15 +15,17 @@ The current production version is available at [https://peterlp123.github.io/pol
 
 ## Included
 
-- 362 useful words and phrases across 33 practical conversation units
+- 938 useful words and phrases across 81 practical conversation units
 - Polish audio through the browser's `pl-PL` speech voice
-- English-friendly pronunciation guides with marked word stress
+- English-friendly pronunciation guides alongside browser-spoken Polish audio
 - Optional microphone practice, phone-dictation fallback, and approximate speech-match feedback
-- Sixteen five-turn branching dialogues with three response options per turn, covering cafés, introductions, travel, health, errands, sightseeing, and home problems
+- Forty-two five-turn branching dialogues with three response options per turn, from first introductions to presentations, contract questions, negotiations, and public consultations
 - Flashcard, listening, sentence-building, and speaking drills that prioritise your weakest phrases
 - Finite daily sessions that mix new phrases, due reviews, and a real-life dialogue
 - Due-date spaced repetition with Again, Hard, Good, and Easy ratings
-- Twenty-four Polish sound lessons and thirty beginner grammar explainers
+- Twenty-four Polish sound lessons and sixty-six grammar explainers spanning beginner foundations through a B2 bridge
+- Thirty-six practical readings and thirty-six controlled-writing tasks, including extended texts, proposals, formal correspondence, reflective narratives, evidence evaluation, and argument-building
+- Ten stage checks covering listening, reading, grammar, recall, writing, dialogue, and speaking
 - XP, streaks, an adjustable daily goal, weekly activity, phrase mastery, and dialogue records saved in `localStorage`
 - Validated progress export/import plus a privacy-safe tester diagnostics summary
 - Responsive desktop, tablet, and mobile layouts

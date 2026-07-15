@@ -75,6 +75,13 @@ describe("guided learning flow", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
+  it("groups desktop navigation into learn, reference, and progress", () => {
+    render(<App />);
+    expect(screen.getByText("LEARN")).toBeInTheDocument();
+    expect(screen.getByText("REFERENCE")).toBeInTheDocument();
+    expect(screen.getByText("PROGRESS")).toBeInTheDocument();
+  });
+
   it("groups the course into stage sections with only the frontier stage open", async () => {
     window.location.hash = "#course";
     render(<App />);
@@ -85,5 +92,16 @@ describe("guided learning flow", () => {
 
     fireEvent.click(everydayHeader);
     expect(everydayHeader).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("returns focus to the unit action after closing a lesson", async () => {
+    window.location.hash = "#course";
+    render(<App />);
+    const start = (await screen.findAllByRole("button", { name: /start unit/i }))[0];
+    start.focus();
+    fireEvent.click(start);
+    expect(await screen.findByRole("dialog", { name: /lesson/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /finish this lesson later/i }));
+    await waitFor(() => expect(start).toHaveFocus());
   });
 });
