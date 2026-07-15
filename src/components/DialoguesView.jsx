@@ -31,7 +31,7 @@ export default function DialoguesView({ progress, onCorrect, onCompleteDialogue 
     setSelected(dialogue);
     setPickerOpen(false);
     setQuery("");
-    window.setTimeout(() => triggerRef.current?.focus(), 0);
+    window.setTimeout(() => triggerRef.current?.focus({ preventScroll: true }), 0);
   };
 
   return (

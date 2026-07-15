@@ -39,7 +39,7 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
       <header className="page-header"><div><span className="eyebrow red"><Brain size={15} /> PRACTICE STUDIO</span><h1>Make it stick</h1><p>Choose a drill whenever you want extra practice. Ratings feed the same review schedule as your daily session.</p></div><div className="mastery-chip"><Trophy size={21} /><span><strong>{progress.totalReviews}</strong> reviews</span></div></header>
       <div className="practice-toolbar">
         <div className="mode-tabs" role="tablist" aria-label="Practice mode">
-          {modes.map(({ id, label, icon: Icon, hint }) => <button key={id} role="tab" aria-label={label} aria-selected={mode === id} className={mode === id ? "active" : ""} onClick={(event) => { selectMode(id); event.currentTarget.scrollIntoView({ behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest", inline: "center" }); }}><Icon size={20} /><span><strong>{label}</strong><small>{hint}</small></span></button>)}
+          {modes.map(({ id, label, icon: Icon, hint }) => <button key={id} role="tab" aria-label={label} aria-selected={mode === id} className={mode === id ? "active" : ""} onClick={() => selectMode(id)}><Icon size={20} /><span><strong>{label}</strong><small>{hint}</small></span></button>)}
         </div>
         <label className="practice-filter">Topic <select value={topic} onChange={(event) => selectTopic(event.target.value)}>{courseTopics.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
