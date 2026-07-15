@@ -2,7 +2,7 @@ import { TOPICS } from "../data/content/schema.js";
 
 const VIEW_IDS = new Set(["home", "session", "course", "practice", "sounds", "dialogues", "grammar", "data"]);
 const PRACTICE_MODES = new Set(["flashcards", "listen", "builder", "speak", "reading", "writing", "grammar"]);
-const PRACTICE_TOPICS = new Set(["All", ...TOPICS]);
+const PRACTICE_TOPICS = new Set(["All", "Entire course", ...TOPICS]);
 
 export function viewFromHash(hash = "") {
   const raw = hash.replace(/^#\/?/, "");

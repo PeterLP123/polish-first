@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen, Brain, Check, FilePenLine, Headphones, Languages, Lightbulb, Mic, RotateCcw, Trophy, Volume2, X } from "lucide-react";
-import { allPhrases, clozeItems, courseTopics, readings, writingItems } from "../data/course.js";
+import { allPhrases, clozeItems, courseTopics, readings, units, writingItems } from "../data/course.js";
 import { buildReviewDeck, scoreCloze, scoreForRating, scoreReading, scoreWriting, shuffled, similarity } from "../lib/learning.js";
 import { speakPolish } from "../lib/speech.js";
 import { AudioButton, PronunciationCard } from "./LearningControls.jsx";
@@ -13,10 +13,12 @@ const RATINGS = [
 ];
 
 export default function PracticeView({ progress, award, onAttempt = () => {}, initialMode = "flashcards", initialTopic = "All" }) {
+  const topicOptions = [...courseTopics, "Entire course"];
   const [mode, setMode] = useState(initialMode);
-  const [topic, setTopic] = useState(courseTopics.includes(initialTopic) ? initialTopic : "All");
+  const [topic, setTopic] = useState(topicOptions.includes(initialTopic) ? initialTopic : "All");
+  const tabRefs = useRef([]);
   useEffect(() => setMode(initialMode), [initialMode]);
-  useEffect(() => setTopic(courseTopics.includes(initialTopic) ? initialTopic : "All"), [initialTopic]);
+  useEffect(() => setTopic(topicOptions.includes(initialTopic) ? initialTopic : "All"), [initialTopic]);
   const modes = [
     { id: "flashcards", label: "Flashcards", icon: RotateCcw, hint: "Recall meanings" },
     { id: "listen", label: "Listen", icon: Headphones, hint: "Train your ear" },
@@ -26,30 +28,45 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
     { id: "writing", label: "Write", icon: FilePenLine, hint: "Controlled replies" },
     { id: "grammar", label: "Grammar", icon: Lightbulb, hint: "Complete the gap" },
   ];
-  const phrasePool = topic === "All" ? allPhrases : allPhrases.filter((phrase) => phrase.topic === topic);
-  const readingPool = topic === "All" ? readings : readings.filter((item) => item.topic === topic);
-  const writingPool = topic === "All" ? writingItems : writingItems.filter((item) => item.topic === topic);
-  const grammarPool = topic === "All" ? clozeItems : clozeItems.filter((item) => item.topic === topic);
+  const nextUnit = units.find((unit) => !progress.completedUnits.includes(unit.id)) ?? units.at(-1);
+  const recommendedIds = new Set(buildReviewDeck(progress, 60).map((phrase) => phrase.id));
+  progress.learnedPhrases.forEach((id) => recommendedIds.add(id));
+  allPhrases.filter((phrase) => phrase.stage === nextUnit.stage).forEach((phrase) => recommendedIds.add(phrase.id));
+  const recommendedPhrases = allPhrases.filter((phrase) => recommendedIds.has(phrase.id));
+  const phrasePool = topic === "All" ? recommendedPhrases : topic === "Entire course" ? allPhrases : allPhrases.filter((phrase) => phrase.topic === topic);
+  const readingPool = topic === "All" ? readings.filter((item) => item.stage === nextUnit.stage) : topic === "Entire course" ? readings : readings.filter((item) => item.topic === topic);
+  const writingPool = topic === "All" ? writingItems.filter((item) => item.stage === nextUnit.stage) : topic === "Entire course" ? writingItems : writingItems.filter((item) => item.topic === topic);
+  const grammarPool = topic === "All" ? clozeItems.filter((item) => item.stage === nextUnit.stage) : topic === "Entire course" ? clozeItems : clozeItems.filter((item) => item.topic === topic);
   const updateRoute = (nextMode, nextTopic) => window.history.replaceState(null, "", `#practice?mode=${encodeURIComponent(nextMode)}&topic=${encodeURIComponent(nextTopic)}`);
   const selectMode = (nextMode) => { setMode(nextMode); updateRoute(nextMode, topic); };
   const selectTopic = (nextTopic) => { setTopic(nextTopic); updateRoute(mode, nextTopic); };
+  const moveTabFocus = (event, index) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? modes.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + modes.length) % modes.length;
+    selectMode(modes[nextIndex].id);
+    tabRefs.current[nextIndex]?.focus();
+  };
 
   return (
     <div className="view-stack practice-page">
       <header className="page-header"><div><span className="eyebrow red"><Brain size={15} /> PRACTICE STUDIO</span><h1>Make it stick</h1><p>Choose a drill whenever you want extra practice. Ratings feed the same review schedule as your daily session.</p></div><div className="mastery-chip"><Trophy size={21} /><span><strong>{progress.totalReviews}</strong> reviews</span></div></header>
       <div className="practice-toolbar">
         <div className="mode-tabs" role="tablist" aria-label="Practice mode">
-          {modes.map(({ id, label, icon: Icon, hint }) => <button key={id} role="tab" aria-label={label} aria-selected={mode === id} className={mode === id ? "active" : ""} onClick={() => selectMode(id)}><Icon size={20} /><span><strong>{label}</strong><small>{hint}</small></span></button>)}
+          {modes.map(({ id, label, icon: Icon, hint }, index) => <button key={id} id={`practice-tab-${id}`} ref={(element) => { tabRefs.current[index] = element; }} role="tab" aria-label={label} aria-selected={mode === id} aria-controls={`practice-panel-${id}`} tabIndex={mode === id ? 0 : -1} className={mode === id ? "active" : ""} onKeyDown={(event) => moveTabFocus(event, index)} onClick={() => selectMode(id)}><Icon size={20} /><span><strong>{label}</strong><small>{hint}</small></span></button>)}
         </div>
-        <label className="practice-filter">Topic <select value={topic} onChange={(event) => selectTopic(event.target.value)}>{courseTopics.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="practice-filter">Practice set <select value={topic} onChange={(event) => selectTopic(event.target.value)}>{topicOptions.map((item) => <option key={item} value={item}>{item === "All" ? "Recommended" : item}</option>)}</select></label>
       </div>
-      {mode === "flashcards" && <Flashcards key={`flashcards-${topic}`} progress={progress} award={award} onAttempt={onAttempt} pool={phrasePool} />}
-      {mode === "listen" && <ListeningQuiz key={`listen-${topic}`} award={award} onAttempt={onAttempt} pool={phrasePool} />}
-      {mode === "builder" && <SentenceBuilder key={`builder-${topic}`} award={award} onAttempt={onAttempt} pool={phrasePool} />}
-      {mode === "speak" && <SpeakPractice key={`speak-${topic}`} progress={progress} award={award} onAttempt={onAttempt} pool={phrasePool} />}
-      {mode === "reading" && <ReadingPractice key={`reading-${topic}`} items={readingPool.length ? readingPool : readings} award={award} onAttempt={onAttempt} />}
-      {mode === "writing" && <WritingPractice key={`writing-${topic}`} items={writingPool.length ? writingPool : writingItems} award={award} onAttempt={onAttempt} />}
-      {mode === "grammar" && <GrammarPractice key={`grammar-${topic}`} items={grammarPool.length ? grammarPool : clozeItems} award={award} onAttempt={onAttempt} />}
+      {topic === "All" && <p className="practice-scope-note">Recommended set: reviews due, phrases you have learned, and {nextUnit.stage} material from your current course stage.</p>}
+      <div id={`practice-panel-${mode}`} role="tabpanel" aria-labelledby={`practice-tab-${mode}`}>
+        {mode === "flashcards" && <Flashcards key={`flashcards-${topic}`} progress={progress} award={award} onAttempt={onAttempt} pool={phrasePool} />}
+        {mode === "listen" && <ListeningQuiz key={`listen-${topic}`} award={award} onAttempt={onAttempt} pool={phrasePool} />}
+        {mode === "builder" && <SentenceBuilder key={`builder-${topic}`} award={award} onAttempt={onAttempt} pool={phrasePool} />}
+        {mode === "speak" && <SpeakPractice key={`speak-${topic}`} progress={progress} award={award} onAttempt={onAttempt} pool={phrasePool} />}
+        {mode === "reading" && <ReadingPractice key={`reading-${topic}`} items={readingPool.length ? readingPool : readings} award={award} onAttempt={onAttempt} />}
+        {mode === "writing" && <WritingPractice key={`writing-${topic}`} items={writingPool.length ? writingPool : writingItems} award={award} onAttempt={onAttempt} />}
+        {mode === "grammar" && <GrammarPractice key={`grammar-${topic}`} items={grammarPool.length ? grammarPool : clozeItems} award={award} onAttempt={onAttempt} />}
+      </div>
     </div>
   );
 }
@@ -82,7 +99,7 @@ function Flashcards({ progress, award, onAttempt, pool }) {
       <article className={`flashcard ${flipped ? "flipped" : ""}`} aria-label={`Flashcard: ${phrase.polish}`}>
         <span className="flashcard-label">{flipped ? "ANSWER" : "WHAT DOES THIS MEAN?"}</span>
         <AudioButton text={phrase.polish} compact />
-        <h2>{phrase.polish}</h2>
+        <h2 lang="pl">{phrase.polish}</h2>
         <p className="phonetic large">{phrase.phonetic}</p>
         {flipped ? <div className="flashcard-answer"><span>{phrase.english}</span>{phrase.tip && <small>{phrase.tip}</small>}</div> : <button className="flashcard-reveal" onClick={() => setFlipped(true)}>Reveal meaning</button>}
       </article>
@@ -121,7 +138,9 @@ function ListeningQuiz({ award, onAttempt, pool }) {
 function makeListeningRound(source, excludeId) {
   const pool = source.filter((item) => item.id !== excludeId);
   const phrase = pool[Math.floor(Math.random() * pool.length)];
-  const distractors = shuffled(allPhrases.filter((item) => item.id !== phrase.id && item.english !== phrase.english)).slice(0, 3);
+  const scopedDistractors = source.filter((item) => item.id !== phrase.id && item.english !== phrase.english);
+  const fallbackDistractors = allPhrases.filter((item) => item.id !== phrase.id && item.english !== phrase.english && !scopedDistractors.some((scoped) => scoped.id === item.id));
+  const distractors = shuffled([...scopedDistractors, ...fallbackDistractors]).slice(0, 3);
   return { phrase, options: shuffled([phrase, ...distractors]) };
 }
 
@@ -198,7 +217,7 @@ function ReadingPractice({ items, award, onAttempt }) {
     onAttempt(item.id, "reading", "reading", score);
   };
   const next = () => { setIndex((value) => value + 1); setAnswers({}); setResult(null); };
-  return <section className="practice-stage text-practice"><span className="eyebrow">READ A PRACTICAL TEXT</span><h2>{item.text}</h2>{item.questions.map((question, questionIndex) => <fieldset key={question.prompt}><legend>{question.prompt}</legend>{question.options.map((option, optionIndex) => <label key={option}><input type="radio" name={`${item.id}-${questionIndex}`} checked={answers[questionIndex] === optionIndex} onChange={() => setAnswers((current) => ({ ...current, [questionIndex]: optionIndex }))} /> {option}</label>)}</fieldset>)}{result === null ? <button className="primary-button" disabled={Object.keys(answers).length !== item.questions.length} onClick={submit}>Check answers</button> : <div className="quiz-feedback correct" role="status"><strong>{Math.round(result * 100)}% correct</strong><button className="primary-button" onClick={next}>Next reading <ArrowRight size={17} /></button></div>}</section>;
+  return <section className="practice-stage text-practice"><span className="eyebrow">READ A PRACTICAL TEXT</span><h2 lang="pl">{item.text}</h2>{item.questions.map((question, questionIndex) => <fieldset key={question.prompt} disabled={result !== null}><legend>{question.prompt}</legend>{question.options.map((option, optionIndex) => <label key={option}><input type="radio" name={`${item.id}-${questionIndex}`} checked={answers[questionIndex] === optionIndex} onChange={() => setAnswers((current) => ({ ...current, [questionIndex]: optionIndex }))} /> {option}</label>)}</fieldset>)}{result === null ? <button className="primary-button" disabled={Object.keys(answers).length !== item.questions.length} onClick={submit}>Check answers</button> : <div className="quiz-feedback correct" role="status"><strong>{Math.round(result * 100)}% correct</strong><button className="primary-button" onClick={next}>Next reading <ArrowRight size={17} /></button></div>}</section>;
 }
 
 function WritingPractice({ items, award, onAttempt }) {
@@ -213,7 +232,7 @@ function WritingPractice({ items, award, onAttempt }) {
     onAttempt(item.id, "writing", "writing", score);
   };
   const next = () => { setIndex((value) => value + 1); setValue(""); setResult(null); };
-  return <section className="practice-stage text-practice"><span className="eyebrow">CONTROLLED WRITING</span><h2>{item.prompt}</h2><label>Your Polish<textarea rows="5" lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={value} onChange={(event) => setValue(event.target.value)} placeholder="Write or use your phone keyboard's microphone" /></label>{result === null ? <button className="primary-button" disabled={!value.trim()} onClick={submit}>Check response</button> : <div className={`builder-feedback ${result ? "correct" : "wrong"}`} role="status"><strong>{result ? "Required meaning included." : "Use the model and try another prompt."}</strong><span>Model: {item.acceptedAnswers[0]}</span><button className="primary-button" onClick={next}>Next prompt</button></div>}</section>;
+  return <section className="practice-stage text-practice"><span className="eyebrow">CONTROLLED WRITING</span><h2>{item.prompt}</h2><label>Your Polish<textarea rows="5" lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={value} disabled={result !== null} onChange={(event) => setValue(event.target.value)} placeholder="Write or use your phone keyboard's microphone" /></label>{result === null ? <button className="primary-button" disabled={!value.trim()} onClick={submit}>Check response</button> : <div className={`builder-feedback ${result ? "correct" : "wrong"}`} role="status"><strong>{result ? "Required meaning included." : "Use the model and compare the meaning."}</strong><span>Model: <span lang="pl">{item.acceptedAnswers[0]}</span></span><button className="primary-button" onClick={next}>Next prompt</button></div>}</section>;
 }
 
 function GrammarPractice({ items, award, onAttempt }) {
@@ -228,5 +247,5 @@ function GrammarPractice({ items, award, onAttempt }) {
     onAttempt(item.id, "grammar", "grammar", score);
   };
   const next = () => { setIndex((value) => value + 1); setValue(""); setResult(null); };
-  return <section className="practice-stage text-practice"><span className="eyebrow">COMPLETE THE GAP</span><h2>{item.prompt}</h2><label>Missing Polish<input lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && value.trim()) { event.preventDefault(); submit(); } }} placeholder="Type or dictate the missing Polish" /></label>{result === null ? <button className="primary-button" disabled={!value.trim()} onClick={submit}>Check answer</button> : <div className={`builder-feedback ${result ? "correct" : "wrong"}`} role="status"><strong>{result ? "Correct." : `Accepted answer: ${item.acceptedAnswers[0]}`}</strong><button className="primary-button" onClick={next}>Next grammar item</button></div>}</section>;
+  return <section className="practice-stage text-practice"><span className="eyebrow">COMPLETE THE GAP</span><h2>{item.prompt}</h2><label>Missing Polish<input lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={value} disabled={result !== null} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && value.trim() && result === null) { event.preventDefault(); submit(); } }} placeholder="Type or dictate the missing Polish" /></label>{result === null ? <button className="primary-button" disabled={!value.trim()} onClick={submit}>Check answer</button> : <div className={`builder-feedback ${result ? "correct" : "wrong"}`} role="status"><strong>{result ? "Correct." : <>Accepted answer: <span lang="pl">{item.acceptedAnswers[0]}</span></>}</strong><button className="primary-button" onClick={next}>Next grammar item</button></div>}</section>;
 }

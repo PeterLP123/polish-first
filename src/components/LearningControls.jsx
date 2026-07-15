@@ -106,7 +106,7 @@ export function PronunciationCard({ phrase, onComplete, extended = false }) {
         <span className="slow-label">English-friendly sound guide</span>
       </div>
       <div className="phrase-lockup">
-        <h3>{phrase.polish}</h3>
+        <h3 lang="pl">{phrase.polish}</h3>
         <p className="phonetic">{phrase.phonetic}</p>
         <p className="translation">{phrase.english}</p>
       </div>

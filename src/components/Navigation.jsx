@@ -55,6 +55,8 @@ export function BottomNav({ view, dueCount = 0, progress, onNavigate }) {
   const overflow = NAV_ITEMS.filter((item) => !BOTTOM_NAV_IDS.includes(item.id));
   const overflowActive = overflow.some((item) => item.id === view);
 
+  useEffect(() => setMoreOpen(false), [view]);
+
   useEffect(() => {
     if (!moreOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
@@ -107,13 +109,13 @@ export function BottomNav({ view, dueCount = 0, progress, onNavigate }) {
           <section ref={sheetRef} className="more-sheet" role="dialog" aria-modal="true" aria-label="More sections">
             <div className="sheet-handle" aria-hidden="true" />
             <div className="more-sheet-heading"><div><span className="eyebrow red">MORE</span><h2>Reference & progress</h2></div><StreakCard progress={progress} compact /></div>
-            <div role="menu" aria-label="More destinations">
+            <nav aria-label="Additional navigation">
               {overflow.map(({ id, label, icon: Icon }) => (
-                <button key={id} role="menuitem" className={view === id ? "active" : ""} onClick={() => go(id)}>
+                <button key={id} aria-current={view === id ? "page" : undefined} className={view === id ? "active" : ""} onClick={() => go(id)}>
                   <Icon size={20} /><span>{label}</span><ChevronRight size={17} aria-hidden="true" />
                 </button>
               ))}
-            </div>
+            </nav>
           </section>
         </>
       )}

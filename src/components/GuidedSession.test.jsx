@@ -17,4 +17,13 @@ describe("guided session tasks", () => {
     fireEvent.click(complete);
     expect(onCommit).toHaveBeenCalledWith(session.tasks[0], expect.objectContaining({ kind: "learn" }));
   });
+
+  it("describes same-session reinforcement without promising a schedule change", () => {
+    const task = { id: "reinforce-1", type: "review", mode: "flashcard", phraseId: allPhrases[0].id, reinforcement: true };
+    const session = { date: "2026-07-14", cursor: 0, completedAt: null, results: [], tasks: [task] };
+    render(<GuidedSession session={session} onCommit={vi.fn()} onExit={vi.fn()} onRestart={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /reveal meaning/i }));
+    expect(screen.getByText("Needed effort")).toBeInTheDocument();
+    expect(screen.queryByText("Double the interval")).not.toBeInTheDocument();
+  });
 });

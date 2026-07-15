@@ -1,6 +1,7 @@
+import { toEnglishPhonetic } from "./phonetics.js";
+
 const POLISH_ASCII = { ą: "a", ć: "c", ę: "e", ł: "l", ń: "n", ó: "o", ś: "s", ź: "z", ż: "z" };
 const slugify = (value) => value.toLocaleLowerCase("pl").replace(/[ąćęłńóśźż]/g, (letter) => POLISH_ASCII[letter]).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-const phonetic = (value) => value.toLocaleLowerCase("pl").replace(/cz/g, "ch").replace(/sz/g, "sh").replace(/rz|ż/g, "zh").replace(/ł/g, "w").replace(/w/g, "v").replace(/j/g, "y").replace(/c/g, "ts").replace(/ó/g, "u");
 
 function unit(slug, title, topic, stage, icon, description, grammar, pairs) {
   return {
@@ -18,7 +19,7 @@ function unit(slug, title, topic, stage, icon, description, grammar, pairs) {
       id: `${slug}-${slugify(polish)}`,
       unitId: slug,
       polish,
-      phonetic: phonetic(polish),
+      phonetic: toEnglishPhonetic(polish),
       english,
       tip,
       stage,

@@ -1,5 +1,107 @@
-const phonetic = (value) => value.toLocaleLowerCase("pl").replace(/cz/g, "ch").replace(/sz/g, "sh").replace(/rz|ż/g, "zh").replace(/ł/g, "w").replace(/w/g, "v").replace(/j/g, "y").replace(/c/g, "ts").replace(/ó/g, "u");
-const choice = (polish, english, good) => ({ polish, phonetic: phonetic(polish), english, good });
+import { toEnglishPhonetic } from "./phonetics.js";
+
+const choice = (polish, english, good) => ({ polish, phonetic: toEnglishPhonetic(polish), english, good });
+
+const DIALOGUE_DISTRACTORS = {
+  "clothes-return": [
+    ["Poproszę bilet do Gdańska.", "A ticket to Gdańsk, please."],
+    ["Boli mnie gardło.", "My throat hurts."],
+    ["Stolik dla dwóch osób, proszę.", "A table for two, please."],
+    ["Chcę zapisać się na kurs.", "I want to enrol on a course."],
+    ["Mam rezerwację na nazwisko Taylor.", "I have a reservation under Taylor."],
+  ],
+  "course-enrolment": [
+    ["Chciałbym zwrócić tę kurtkę.", "I'd like to return this jacket."],
+    ["Rachunek, proszę.", "The bill, please."],
+    ["Z którego peronu odjeżdża pociąg?", "Which platform does the train leave from?"],
+    ["Internet nie działa od rana.", "The internet has not worked since this morning."],
+    ["Czy ma pani coś na kaszel?", "Do you have something for a cough?"],
+  ],
+  "office-deadline": [
+    ["Poproszę sok pomarańczowy.", "Orange juice, please."],
+    ["Gdzie jest mój pokój?", "Where is my room?"],
+    ["Boli mnie głowa.", "My head hurts."],
+    ["Czy ten pociąg jedzie do Krakowa?", "Does this train go to Kraków?"],
+    ["Ten rozmiar jest za mały.", "This size is too small."],
+  ],
+  "internet-support": [
+    ["Poproszę zupę pomidorową.", "Tomato soup, please."],
+    ["Dwa bilety na sobotę, proszę.", "Two tickets for Saturday, please."],
+    ["Chciałbym zwrócić tę kurtkę.", "I'd like to return this jacket."],
+    ["Potrzebuję recepty.", "I need a prescription."],
+    ["Kurs zaczyna się we wrześniu.", "The course starts in September."],
+  ],
+  "flat-viewing": [
+    ["Czy ma pani coś na ból gardła?", "Do you have something for a sore throat?"],
+    ["O której odjeżdża pociąg?", "What time does the train leave?"],
+    ["Bez cukru, proszę.", "Without sugar, please."],
+    ["Szukam kursu wieczorowego.", "I'm looking for an evening course."],
+    ["Proszę uruchomić router ponownie.", "Please restart the router."],
+  ],
+  "event-tickets": [
+    ["Boli mnie brzuch.", "My stomach hurts."],
+    ["Czy rachunki są wliczone?", "Are the bills included?"],
+    ["Poproszę herbatę.", "Tea, please."],
+    ["Nie mam połączenia z internetem.", "I have no internet connection."],
+    ["Ta kurtka jest za duża.", "This jacket is too large."],
+  ],
+  "weekend-hike": [
+    ["Poproszę espresso.", "An espresso, please."],
+    ["Gdzie mam podpisać formularz?", "Where should I sign the form?"],
+    ["Czynsz wynosi trzy tysiące złotych.", "The rent is three thousand zloty."],
+    ["Router miga na czerwono.", "The router is flashing red."],
+    ["Chcę zrobić test poziomujący.", "I want to take the placement test."],
+  ],
+  "choosing-hotel": [
+    ["Potrzebuję wizyty u lekarza.", "I need a doctor's appointment."],
+    ["Poproszę rachunek.", "The bill, please."],
+    ["Kiedy zaczynają się zajęcia?", "When do the classes start?"],
+    ["Czy mogę wymienić ten sweter?", "Can I exchange this jumper?"],
+    ["Raport będzie gotowy jutro.", "The report will be ready tomorrow."],
+  ],
+  "telling-a-story": [
+    ["Poproszę kawę na wynos.", "A takeaway coffee, please."],
+    ["Muszę złożyć ten wniosek.", "I need to submit this application."],
+    ["Internet działa bardzo wolno.", "The internet is very slow."],
+    ["Śniadanie jest od siódmej.", "Breakfast is from seven."],
+    ["Poproszę dwa bilety.", "Two tickets, please."],
+  ],
+  "making-arrangements": [
+    ["Boli mnie gardło od tygodnia.", "My throat has hurt for a week."],
+    ["Poproszę zwrot pieniędzy.", "I'd like a refund."],
+    ["Proszę sprawdzić połączenie.", "Please check the connection."],
+    ["Gdzie mam złożyć dokumenty?", "Where should I submit the documents?"],
+    ["Pociąg jest opóźniony.", "The train is delayed."],
+  ],
+  "clarifying-call": [
+    ["Poproszę stolik przy oknie.", "A table by the window, please."],
+    ["Szlak jest zamknięty.", "The trail is closed."],
+    ["Mam paragon za kurtkę.", "I have the receipt for the jacket."],
+    ["Kurs trwa dwanaście tygodni.", "The course lasts twelve weeks."],
+    ["Czy potrzebuję recepty?", "Do I need a prescription?"],
+  ],
+  "damaged-order": [
+    ["Z którego peronu odjeżdża pociąg?", "Which platform does the train leave from?"],
+    ["Poproszę kawę bez mleka.", "A coffee without milk, please."],
+    ["Mam rezerwację na dwie noce.", "I have a reservation for two nights."],
+    ["Chcę zapisać się na kurs.", "I want to enrol on a course."],
+    ["Boli mnie kolano.", "My knee hurts."],
+  ],
+  "office-application": [
+    ["Poproszę herbatę z cytryną.", "Tea with lemon, please."],
+    ["Który szlak jest najłatwiejszy?", "Which trail is the easiest?"],
+    ["Internet nie działa.", "The internet is not working."],
+    ["Stolik dla czterech osób.", "A table for four."],
+    ["Chciałbym wymienić tę kurtkę.", "I'd like to exchange this jacket."],
+  ],
+  "giving-advice": [
+    ["Poproszę cappuccino.", "A cappuccino, please."],
+    ["Raport jest już gotowy.", "The report is already finished."],
+    ["Chciałbym zwrócić ten produkt.", "I'd like to return this product."],
+    ["Poproszę dwa miejsca na balkonie.", "Two balcony seats, please."],
+    ["Proszę zresetować router.", "Please reset the router."],
+  ],
+};
 
 function dialogue(id, icon, title, setting, speaker, exchanges) {
   return {
@@ -7,17 +109,20 @@ function dialogue(id, icon, title, setting, speaker, exchanges) {
     icon,
     title,
     setting,
-    lines: exchanges.map(([prompt, translation, response, responseTranslation, alternative, alternativeTranslation]) => ({
-      speaker,
-      polish: prompt,
-      phonetic: phonetic(prompt),
-      english: translation,
-      choices: [
-        choice(response, responseTranslation, true),
-        choice(alternative, alternativeTranslation, true),
-        choice("Poproszę kawę z mlekiem.", "A coffee with milk, please.", false),
-      ],
-    })),
+    lines: exchanges.map(([prompt, translation, response, responseTranslation, alternative, alternativeTranslation], index) => {
+      const distractor = DIALOGUE_DISTRACTORS[id][index];
+      return {
+        speaker,
+        polish: prompt,
+        phonetic: toEnglishPhonetic(prompt),
+        english: translation,
+        choices: [
+          choice(response, responseTranslation, true),
+          choice(alternative, alternativeTranslation, true),
+          choice(distractor[0], distractor[1], false),
+        ],
+      };
+    }),
   };
 }
 

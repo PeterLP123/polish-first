@@ -112,7 +112,7 @@ const rawUnits = [
       p("Wezmę to", "VEZ-meh toh", "I'll take it"),
       p("Za drogo", "zah DROH-goh", "Too expensive"),
       p("Gotówką czy kartą?", "goh-TOOF-kong chih KAR-tong", "Cash or card?"),
-      p("Czy potrzebuje pan torbę?", "chih poh-tsheh-BOO-yeh pahn TOR-beh", "Do you need a bag?"),
+      { ...p("Czy potrzebuje pan torby?", "chih poh-tsheh-BOO-yeh pahn TOR-bih", "Do you need a bag?"), id: "shopping-czy-potrzebuje-pan-torbe" },
       p("Paragon, proszę", "pah-RAH-gon PROH-sheh", "A receipt, please"),
     ],
     grammar: "Pan (to a man) and pani (to a woman) make questions polite: Czy ma pan…? / Czy ma pani…? They work like a respectful you.",
@@ -709,7 +709,7 @@ const rawUnits = [
       p("Czy jest zniżka dla studentów?", "chih yest ZNEESH-kah dlah stoo-DEN-toof", "Is there a student discount?"),
       p("Czy jest wycieczka po angielsku?", "chih yest vih-CHYECH-kah poh an-GYEL-skoo", "Is there a tour in English?"),
       p("Gdzie jest szatnia?", "g-jyeh yest SHAT-nyah", "Where is the cloakroom?"),
-      p("Czy można robić zdjęcia?", "chih MOZH-nah ROH-beetch ZDYEN-chah", "May you take photos?"),
+      p("Czy można robić zdjęcia?", "chih MOZH-nah ROH-beetch ZDYEN-chah", "Are photos allowed?"),
       p("Która wystawa jest najciekawsza?", "KTOO-rah vih-STAH-vah yest nay-chyeh-KAF-shah", "Which exhibition is most interesting?"),
       p("Jak dojść na Stare Miasto?", "yahk doyshch nah STAH-reh MYAH-stoh", "How do I get to the Old Town?"),
       p("Co warto zobaczyć?", "tsoh VAR-toh zoh-BAH-chitch", "What is worth seeing?"),
@@ -785,7 +785,7 @@ const legacyUnits = rawUnits.map((unit, unitIndex) => {
     stage,
     phrases: unit.phrases.map((phrase) => ({
       ...phrase,
-      id: `${unit.slug}-${slugify(phrase.polish)}`,
+      id: phrase.id ?? `${unit.slug}-${slugify(phrase.polish)}`,
       unitId: unit.slug,
       stage,
       topic: unit.topic,
@@ -839,7 +839,7 @@ export const soundLessons = [
   { sound: "PRZ", like: "psh in one beat", examples: ["przepraszam", "przyjaciel", "przesiąść"], tip: "Join p straight into sz. In careful speech the cluster is compact, not two separate syllables." },
   { sound: "TRZ", like: "tsh in one beat", examples: ["trzy", "trzeba", "patrzę"], tip: "Start with t and release into a Polish sz. Some speakers soften it toward cz in fast speech." },
   { sound: "KRZ", like: "ksh in one beat", examples: ["krzesło", "krzyż", "skrzynka"], tip: "Keep the k short, then move straight into the same sound as sz. Voicing changes naturally around nearby sounds." },
-  { sound: "SZCZ", like: "sh followed by ch", examples: ["szczęście", "jeszcze", "szczecin"], tip: "Make sz, then slide straight into cz without adding a vowel between them. Slow and clear is completely acceptable." },
+  { sound: "SZCZ", like: "sh followed by ch", examples: ["szczęście", "jeszcze", "Szczecin"], tip: "Make sz, then slide straight into cz without adding a vowel between them. Slow and clear is completely acceptable." },
   { sound: "ŚĆ / ŹĆ", like: "a soft sh-ch ending", examples: ["cześć", "jeść", "wyjść"], tip: "Keep both sounds light and forward. Let the tongue stay near the roof instead of resetting between consonants." },
 ];
 
@@ -890,7 +890,7 @@ const coreDialogues = [
     title: "Finding the station",
     setting: "You ask a passer-by for directions.",
     lines: [
-      { speaker: "You", polish: "Przepraszam, gdzie jest dworzec?", phonetic: "psheh-PRAH-shahm, g-jyeh yest DVOH-zhets?", english: "Excuse me, where is the station?", choices: [
+      { speaker: "Passer-by", polish: "Dzień dobry. Czy mogę pomóc?", phonetic: "jen DOH-brih. chih MOH-geh POH-moots?", english: "Good morning. Can I help?", choices: [
         { polish: "Gdzie jest dworzec, proszę?", phonetic: "g-jyeh yest DVOH-zhets PROH-sheh", english: "Where is the station, please?", good: true },
         { polish: "Gdzie jest kawa?", phonetic: "g-jyeh yest KAH-vah", english: "Where is the coffee?", good: false },
       ] },
@@ -990,7 +990,7 @@ const coreDialogues = [
     title: "Finding your train",
     setting: "You need the correct platform and carriage.",
     lines: [
-      { speaker: "You", polish: "Przepraszam, z którego peronu odjeżdża pociąg do Krakowa?", phonetic: "psheh-PRAH-shahm s KTOO-reh-goh peh-ROH-noo od-YEZH-jah POH-chyongk doh krah-KOH-vah", english: "Excuse me, which platform does the train to Kraków leave from?", choices: [
+      { speaker: "Station staff", polish: "Dzień dobry. W czym mogę pomóc?", phonetic: "jen DOH-brih. f chim MOH-geh POH-moots?", english: "Good morning. How can I help?", choices: [
         { polish: "Z którego peronu odjeżdża pociąg do Krakowa?", phonetic: "s KTOO-reh-goh peh-ROH-noo od-YEZH-jah POH-chyongk doh krah-KOH-vah", english: "Which platform does the train to Kraków leave from?", good: true },
         { polish: "Gdzie jest restauracja?", phonetic: "g-jyeh yest res-tow-RAH-tsyah", english: "Where is the restaurant?", good: false },
       ] },
@@ -1254,7 +1254,7 @@ const dialogueExtensions = {
         q("Mam gotówkę.", "mahm goh-TOOF-keh", "I have cash.", true),
         q("Mój lot jest opóźniony.", "mooy lot yest oh-poozh-NYOH-nih", "My flight is delayed."),
       ]),
-      turn("Seller", "Czy potrzebuje pan paragon?", "chih poh-tsheh-BOO-yeh pahn pah-RAH-gon", "Do you need a receipt?", [
+      turn("Seller", "Czy potrzebuje pan paragonu?", "chih poh-tsheh-BOO-yeh pahn pah-rah-GOH-noo", "Do you need a receipt?", [
         q("Tak, poproszę paragon.", "tahk poh-PROH-sheh pah-RAH-gon", "Yes, a receipt please.", true),
         q("Nie, dziękuję. Miłego dnia!", "nyeh jen-KOO-yeh mee-WEH-goh DNYAH", "No thank you. Have a nice day!", true),
         q("Jak często mam to brać?", "yahk CHEN-stoh mahm toh bratch", "How often should I take it?"),
@@ -1389,7 +1389,21 @@ const legacyDialogues = [
   ...advancedDialogues,
 ];
 
-export const dialogues = [...legacyDialogues, ...expansionDialogues, ...b1Dialogues, ...fluencyDialogues];
+const DIALOGUE_STAGES = {
+  cafe: "Starter", meeting: "Starter", directions: "Starter",
+  restaurant: "Everyday", tickets: "Everyday", "hotel-check-in": "Everyday", "train-platform": "Everyday", "market-stall": "Everyday",
+  pharmacy: "Explorer", "doctor-visit": "Explorer", "birthday-invitation": "Explorer", "apartment-repair": "Explorer",
+  "post-office": "Next steps", "currency-exchange": "Next steps", "car-rental": "Next steps", "museum-visit": "Next steps",
+  "clothes-return": "Independent", "course-enrolment": "Independent", "office-deadline": "Independent", "internet-support": "Independent", "flat-viewing": "Independent", "event-tickets": "Independent", "weekend-hike": "Independent",
+  "choosing-hotel": "A2 bridge", "telling-a-story": "A2 bridge", "making-arrangements": "A2 bridge", "clarifying-call": "A2 bridge", "damaged-order": "A2 bridge", "office-application": "A2 bridge", "giving-advice": "A2 bridge",
+  "project-delay": "B1 foundations", "doctor-follow-up": "B1 foundations", "travel-rebooking": "B1 foundations", "formal-complaint": "B1 foundations",
+  "community-meeting": "B1 in action", "clearing-the-air": "B1 in action",
+  "presentation-questions": "B1 confidence", "interview-follow-up": "B1 confidence", "contract-terms": "B1 confidence",
+  "negotiating-compromise": "B2 bridge", "policy-consultation": "B2 bridge", "explaining-breakdown": "B2 bridge",
+};
+
+export const dialogues = [...legacyDialogues, ...expansionDialogues, ...b1Dialogues, ...fluencyDialogues]
+  .map((dialogue) => ({ ...dialogue, stage: DIALOGUE_STAGES[dialogue.id] }));
 
 const legacyGrammarGuides = [
   { title: "A sentence without ‘I’", example: "(Ja) mówię po polsku", meaning: "I speak Polish", body: "The verb ending carries the person, so ja is usually optional. Use it for contrast or emphasis." },
@@ -1404,7 +1418,7 @@ const legacyGrammarGuides = [
   { title: "Stress is predictable", example: "dzię-KU-ję · po-PRO-szę", meaning: "stress the second-last syllable", body: "Polish stress usually falls on the penultimate syllable. Capital letters in our sound guides mark the beat." },
   { title: "The extra-polite wish", example: "Chciałbym kawę", meaning: "I would like a coffee (a woman says chciałabym)", body: "One step softer than poproszę — perfect for requests that feel bigger than ordering. The -a- in chciałabym marks a female speaker." },
   { title: "Saying you have", example: "Mam czas", meaning: "I have time", body: "Mam is one of the most reusable verbs in Polish: mam brata, mam spotkanie, mam pytanie. Even mam na imię is literally ‘I have as a name’." },
-  { title: "Counting money", example: "dwa złote · pięć złotych", meaning: "two zloty · five zloty", body: "After 2, 3, and 4 say złote; from 5 upwards say złotych. Listen for the pattern in prices instead of memorising the table." },
+  { title: "Counting money", example: "dwa złote · pięć złotych", meaning: "two zloty · five zloty", body: "Use złote after numbers ending in 2, 3, or 4, unless the final two digits are 12–14; use złotych with the other plural numbers. Learn common prices as complete chunks." },
   { title: "On Friday, in the evening", example: "w piątek wieczorem", meaning: "on Friday evening", body: "W plus a day means on that day: w sobotę, w niedzielę. Times of day like rano and wieczorem need no extra word at all." },
   { title: "Going to a destination", example: "do Krakowa · do domu", meaning: "to Kraków · home", body: "Do points toward many destinations. The place changes form, so learn do Krakowa, do Warszawy, do pracy, and do domu as complete routes." },
   { title: "Being in a place", example: "w hotelu · na lotnisku", meaning: "in the hotel · at the airport", body: "W usually means in; na often appears with open, public, or activity-based places. The ending changes, but each location phrase is highly reusable." },

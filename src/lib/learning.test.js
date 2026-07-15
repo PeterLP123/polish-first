@@ -28,7 +28,7 @@ import {
   todayMinutes,
   weekActivity,
 } from "./learning.js";
-import { ContentCatalog, allPhrases, clozeItems, milestones, readings, units, writingItems } from "../data/course.js";
+import { ContentCatalog, allPhrases, clozeItems, dialogues, milestones, readings, units, writingItems } from "../data/course.js";
 
 const NOW = new Date(2026, 6, 14, 12);
 
@@ -137,6 +137,26 @@ describe("learning helpers", () => {
     expect(left.tasks).toEqual(right.tasks);
   });
 
+  it("marks same-session practice as reinforcement instead of a scheduled review", () => {
+    const fresh = buildDailySession({ ...baseProgress(), dailyGoal: 15 }, NOW);
+    expect(fresh.tasks.filter((task) => task.type === "review").every((task) => task.reinforcement)).toBe(true);
+
+    const duePhrase = allPhrases[0];
+    const dueProgress = {
+      ...baseProgress(),
+      learnedPhrases: [duePhrase.id],
+      phraseStats: { [duePhrase.id]: stat("2026-07-14", 1) },
+    };
+    const dueTask = buildDailySession(dueProgress, NOW).tasks.find((task) => task.type === "review" && task.phraseId === duePhrase.id);
+    expect(dueTask.reinforcement).toBeUndefined();
+  });
+
+  it("keeps a brand-new learner's guided dialogue at Starter level", () => {
+    const session = buildDailySession({ ...baseProgress(), dailyGoal: 15 }, NOW);
+    const dialogueTask = session.tasks.find((task) => task.type === "dialogue");
+    expect(dialogues.find((dialogue) => dialogue.id === dialogueTask.dialogueId).stage).toBe("Starter");
+  });
+
   it("fills review shortages and handles an exhausted course", () => {
     const phraseStats = Object.fromEntries(allPhrases.map((phrase) => [phrase.id, stat("2027-01-01", 30)]));
     const session = buildDailySession({ ...baseProgress(), dailyGoal: 10, learnedPhrases: allPhrases.map((phrase) => phrase.id), phraseStats }, NOW);
@@ -195,9 +215,12 @@ describe("learning helpers", () => {
 
   it("scores reading, controlled writing, and cloze tasks deterministically", () => {
     const reading = readings[0];
+    const translation = writingItems.find((item) => item.id === "writing-train-travel");
     expect(scoreReading(reading, reading.questions.map((question) => question.answerIndex))).toBe(1);
     expect(scoreWriting(writingItems[0], writingItems[0].acceptedAnswers[0])).toBe(1);
     expect(scoreWriting(writingItems[0], "unrelated text")).toBe(0);
+    expect(scoreWriting(translation, "O której")).toBe(0);
+    expect(scoreWriting(translation, "O której odjeżdża pociąg?")).toBe(1);
     expect(scoreCloze(clozeItems[0], clozeItems[0].acceptedAnswers[0])).toBe(1);
   });
 
@@ -217,6 +240,12 @@ describe("learning helpers", () => {
     expect(progress.milestoneStats[milestone.id]).toMatchObject({ attempts: 1, bestAutoScore: 0.8, passedAt: NOW.toISOString() });
     progress = recordMilestoneResult(progress, milestone.id, Array(9).fill(0.2), "again", new Date(2026, 6, 15, 12));
     expect(progress.milestoneStats[milestone.id]).toMatchObject({ attempts: 2, bestAutoScore: 0.8, lastAutoScore: 0.2, passedAt: NOW.toISOString() });
+  });
+
+  it("requires a positive speaking self-check for the first milestone pass", () => {
+    const milestone = milestones[0];
+    const progress = recordMilestoneResult(baseProgress(), milestone.id, Array(9).fill(1), "again", NOW);
+    expect(progress.milestoneStats[milestone.id]).toMatchObject({ lastAutoScore: 1, lastSpeakingRating: "again", passedAt: null });
   });
 
   it("keeps the fully populated raw progress export below one megabyte", () => {

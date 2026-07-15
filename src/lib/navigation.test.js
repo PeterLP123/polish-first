@@ -17,6 +17,7 @@ describe("section navigation", () => {
 
   it("parses practice state and defaults duplicate or invalid fields", () => {
     expect(viewFromHash("#practice?mode=reading&topic=Travel").practice).toEqual({ mode: "reading", topic: "Travel" });
+    expect(viewFromHash("#practice?mode=listen&topic=Entire%20course").practice).toEqual({ mode: "listen", topic: "Entire course" });
     expect(viewFromHash("#practice?mode=reading&mode=speak&topic=").practice).toEqual({ mode: "flashcards", topic: "All" });
     expect(viewFromHash("#practice?mode=unknown&extra=value").practice).toEqual({ mode: "flashcards", topic: "All" });
   });

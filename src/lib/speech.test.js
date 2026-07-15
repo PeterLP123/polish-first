@@ -48,6 +48,28 @@ describe("Polish speech controls", () => {
     expect(onEnd).toHaveBeenCalledOnce();
   });
 
+  it("finishes the previous playback when speech is replaced or stopped", async () => {
+    const engine = installSynthesis();
+    const firstEnd = vi.fn();
+    const secondEnd = vi.fn();
+    const { speakPolish, stopPolishSpeech } = await import("./speech.js");
+
+    speakPolish("Pierwsze", { onEnd: firstEnd });
+    const first = engine.speak.mock.calls[0][0];
+    speakPolish("Drugie", { onEnd: secondEnd });
+    const second = engine.speak.mock.calls[1][0];
+
+    expect(firstEnd).toHaveBeenCalledOnce();
+    expect(secondEnd).not.toHaveBeenCalled();
+    stopPolishSpeech();
+    expect(secondEnd).toHaveBeenCalledOnce();
+
+    first.onend();
+    second.onend();
+    expect(firstEnd).toHaveBeenCalledOnce();
+    expect(secondEnd).toHaveBeenCalledOnce();
+  });
+
   it("configures a short, cancellable Polish recognition session and keeps alternatives", async () => {
     installSynthesis();
     let instance;

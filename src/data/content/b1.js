@@ -1,10 +1,7 @@
+import { toEnglishPhonetic } from "./phonetics.js";
+
 const POLISH_ASCII = { ą: "a", ć: "c", ę: "e", ł: "l", ń: "n", ó: "o", ś: "s", ź: "z", ż: "z" };
 const slugify = (value) => value.toLocaleLowerCase("pl").replace(/[ąćęłńóśźż]/g, (letter) => POLISH_ASCII[letter]).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-const phonetic = (value) => value.toLocaleLowerCase("pl")
-  .replace(/dź|dzi/g, "jy").replace(/dż/g, "j").replace(/cz/g, "ch").replace(/sz/g, "sh")
-  .replace(/rz|ż/g, "zh").replace(/ś/g, "sh").replace(/ć/g, "ch").replace(/ń/g, "ny")
-  .replace(/ł/g, "W").replace(/w/g, "v").replace(/W/g, "w").replace(/j/g, "y").replace(/c/g, "ts")
-  .replace(/ó/g, "oo").replace(/ą/g, "on").replace(/ę/g, "en");
 
 const reading = (text, questions) => ({ type: "reading", content: { text, questions } });
 const writing = (prompt, kind, model, requiredTokens) => ({
@@ -30,7 +27,7 @@ function unit(slug, title, topic, stage, icon, description, grammar, guideId, ac
       id: `${slug}-${slugify(polish)}`,
       unitId: slug,
       polish,
-      phonetic: phonetic(polish),
+      phonetic: toEnglishPhonetic(polish),
       english,
       tip,
       stage,
@@ -296,7 +293,7 @@ export const b1Units = [
 ];
 
 function choice(polish, english, good) {
-  return { polish, phonetic: phonetic(polish), english, good };
+  return { polish, phonetic: toEnglishPhonetic(polish), english, good };
 }
 
 function dialogue(id, icon, title, setting, speaker, turns) {
@@ -308,7 +305,7 @@ function dialogue(id, icon, title, setting, speaker, turns) {
     lines: turns.map(([polish, english, goodOne, goodOneEnglish, goodTwo, goodTwoEnglish, wrong, wrongEnglish]) => ({
       speaker,
       polish,
-      phonetic: phonetic(polish),
+      phonetic: toEnglishPhonetic(polish),
       english,
       choices: [choice(goodOne, goodOneEnglish, true), choice(goodTwo, goodTwoEnglish, true), choice(wrong, wrongEnglish, false)],
     })),

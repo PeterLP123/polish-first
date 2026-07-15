@@ -1,4 +1,5 @@
-const CACHE_NAME = "polish-first-v7";
+const CACHE_PREFIX = "polish-first-";
+const CACHE_NAME = `${CACHE_PREFIX}v8`;
 const APP_SHELL = ["./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
 
 async function cacheAppShell() {
@@ -23,7 +24,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
@@ -35,8 +36,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(new URL("./", self.registration.scope).href, copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(new URL("./", self.registration.scope).href, copy));
+          }
           return response;
         })
         .catch(() => caches.match(new URL("./", self.registration.scope).href)),

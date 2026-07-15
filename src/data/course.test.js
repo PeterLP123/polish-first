@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ContentCatalog, allPhrases, clozeItems, courseTopics, dialogues, grammarGuides, legacyIdMap, milestones, readings, soundLessons, units, validateCourseContent, writingItems } from "./course.js";
+import { expansionDialogues } from "./content/expansion-extras.js";
+import { toEnglishPhonetic } from "./content/phonetics.js";
 
 describe("course data integrity", () => {
   it("gives every unit a unique slug id", () => {
@@ -74,6 +76,66 @@ describe("course data integrity", () => {
     expect(milestones.find((item) => item.stage === "B1 foundations").tasks.filter((task) => task.kind === "grammar").every((task) => task.itemId.includes("grammar-b1"))).toBe(true);
   });
 
+  it("builds honest generated reading and writing prompts", () => {
+    const generatedReadings = readings.filter((item) => item.format === "phrase-set");
+    const generatedWriting = writingItems.filter((item) => item.kind === "translation");
+    expect(generatedReadings).toHaveLength(24);
+    expect(generatedWriting).toHaveLength(24);
+    expect(new Set(generatedReadings.flatMap((item) => item.questions.map((question) => question.answerIndex)))).toEqual(new Set([0, 1, 2]));
+    generatedReadings.forEach((item) => {
+      expect(item.text).not.toMatch(/[!?…]\./u);
+      item.questions.forEach((question) => {
+        expect(question.options).toHaveLength(3);
+        expect(new Set(question.options).size).toBe(3);
+        expect(question.options[question.answerIndex]).toBeTruthy();
+      });
+    });
+    generatedWriting.forEach((item) => {
+      expect(item.prompt).toMatch(/^Write this useful phrase in Polish:/);
+      expect(item.requiredTokens).toEqual(item.acceptedAnswers[0].toLocaleLowerCase("pl").replace(/[.,!?;:„”"'’]/g, "").split(/\s+/));
+    });
+  });
+
+  it("turns grammar examples into relevant cloze prompts without revealing the answer", () => {
+    clozeItems.forEach((item) => {
+      expect(item.prompt.match(/____/g)).toHaveLength(1);
+      const answer = item.acceptedAnswers[0].toLocaleLowerCase("pl").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      expect(item.prompt.toLocaleLowerCase("pl")).not.toMatch(new RegExp(`(^|[^\\p{L}])${answer}($|[^\\p{L}])`, "u"));
+    });
+    expect(clozeItems.find((item) => item.grammarIds.includes("grammar-make-it-negative"))).toMatchObject({ unitId: "first-words", acceptedAnswers: ["nie"] });
+    expect(clozeItems.find((item) => item.grammarIds.includes("grammar-agreement-review"))).toMatchObject({ unitId: "clothing-returns" });
+    expect(clozeItems.find((item) => item.grammarIds.includes("grammar-b1-cause-result"))).toMatchObject({ unitId: "explaining-decisions" });
+    expect(clozeItems.find((item) => item.grammarIds.includes("grammar-fluency-scenarios"))).toMatchObject({ unitId: "predictions-uncertainty" });
+  });
+
+  it("uses one collision-safe phonetic helper for generated content", () => {
+    expect(toEnglishPhonetic("Dzięki")).toBe("jenki");
+    expect(toEnglishPhonetic("Łódź i szczęście")).not.toMatch(/[ąćęłńóśźż]/iu);
+    units.slice(33).flatMap((unit) => unit.phrases).forEach((phrase) => expect(phrase.phonetic).not.toMatch(/[ąćęłńóśźż]/iu));
+    expansionDialogues.flatMap((dialogue) => dialogue.lines).forEach((line) => {
+      expect(line.phonetic).not.toMatch(/[ąćęłńóśźż]/iu);
+      line.choices.forEach((choice) => expect(choice.phonetic).not.toMatch(/[ąćęłńóśźż]/iu));
+    });
+  });
+
+  it("keeps expansion dialogue distractors varied and unambiguously off-context", () => {
+    expansionDialogues.forEach((dialogue) => {
+      const distractors = dialogue.lines.map((line) => line.choices.find((choice) => !choice.good).polish);
+      expect(new Set(distractors).size).toBe(dialogue.lines.length);
+      expect(distractors).not.toContain("Poproszę kawę z mlekiem.");
+    });
+    expect(expansionDialogues.find((dialogue) => dialogue.id === "flat-viewing").lines[1].choices.find((choice) => !choice.good).polish).not.toBe("Rozumiem, to nie problem.");
+    expect(expansionDialogues.find((dialogue) => dialogue.id === "making-arrangements").lines[0].choices.find((choice) => !choice.good).polish).not.toBe("Czy pasuje ci piąta?");
+  });
+
+  it("keeps corrected Polish forms and guidance in the course", () => {
+    expect(allPhrases.some((phrase) => phrase.polish === "Czy potrzebuje pan torby?")).toBe(true);
+    expect(allPhrases.find((phrase) => phrase.polish === "Czy można robić zdjęcia?").english).toBe("Are photos allowed?");
+    expect(soundLessons.find((lesson) => lesson.sound === "SZCZ").examples).toContain("Szczecin");
+    expect(dialogues.flatMap((dialogue) => dialogue.lines).some((line) => line.polish === "Czy potrzebuje pan paragonu?")).toBe(true);
+    expect(grammarGuides.find((guide) => guide.title === "Counting money").body).toContain("12–14");
+  });
+
   it("extends the course with connected fluency practice", () => {
     const fluencyUnits = units.filter((unit) => ["B1 confidence", "B2 bridge"].includes(unit.stage));
     expect(fluencyUnits).toHaveLength(12);
@@ -87,8 +149,10 @@ describe("course data integrity", () => {
   it("gives every dialogue five turns with multiple natural options", () => {
     expect(new Set(dialogues.map((dialogue) => dialogue.id)).size).toBe(dialogues.length);
     dialogues.forEach((dialogue) => {
+      expect(dialogue.stage).toBeTruthy();
       expect(dialogue.lines.length).toBeGreaterThanOrEqual(5);
       dialogue.lines.forEach((line) => {
+        expect(line.speaker).not.toBe("You");
         expect([line.polish, line.phonetic, line.english].every(Boolean)).toBe(true);
         expect(line.choices.length).toBeGreaterThanOrEqual(3);
         line.choices.forEach((choice) => {

@@ -46,11 +46,12 @@ export function validateContentCatalog(catalog, expected = {}) {
   }
 
   for (const item of catalog.writingItems ?? []) {
-    if (!item.prompt || !["sms", "email", "form", "description"].includes(item.kind) || !item.acceptedAnswers?.length || !item.requiredTokens?.length) errors.push(`${item.id}: invalid writing item`);
+    if (!item.prompt || !["sms", "email", "form", "description", "translation"].includes(item.kind) || !item.acceptedAnswers?.length || !item.requiredTokens?.length) errors.push(`${item.id}: invalid writing item`);
   }
   for (const item of catalog.clozeItems ?? []) if (!item.prompt || !item.acceptedAnswers?.length) errors.push(`${item.id}: invalid cloze item`);
 
   for (const dialogue of catalog.dialogues) {
+    if (!STAGES.includes(dialogue.stage)) errors.push(`${dialogue.id}: invalid dialogue stage`);
     if (dialogue.lines?.length !== 5) errors.push(`${dialogue.id}: dialogue must have five turns`);
     for (const line of dialogue.lines ?? []) {
       if (!line.polish || !line.phonetic || !line.english || line.choices?.length < 3) errors.push(`${dialogue.id}: invalid dialogue turn`);

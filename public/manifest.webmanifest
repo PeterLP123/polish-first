@@ -1,7 +1,7 @@
 {
   "name": "Cześć! — Polish for real life",
   "short_name": "Cześć!",
-  "description": "A conversational, pronunciation-first Polish course for beginners.",
+  "description": "A conversational, pronunciation-first Polish course from first words to confident B1 and B2-bridge practice.",
   "id": "./",
   "start_url": "./#home",
   "scope": "./",

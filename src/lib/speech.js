@@ -3,6 +3,7 @@ const LISTENING_TIMEOUT_MS = 12_000;
 
 let cachedPolishVoice = null;
 let activeUtterance = null;
+let cancelActiveUtterance = null;
 
 function synthesis() {
   return typeof window !== "undefined" ? window.speechSynthesis : null;
@@ -33,8 +34,11 @@ if (synthesis()) {
 export function stopPolishSpeech() {
   const engine = synthesis();
   if (!engine) return false;
-  engine.cancel();
+  const finish = cancelActiveUtterance;
   activeUtterance = null;
+  cancelActiveUtterance = null;
+  engine.cancel();
+  finish?.();
   return true;
 }
 
@@ -55,17 +59,30 @@ export function speakPolish(text, rateOrOptions = 0.82) {
   const voice = refreshPolishVoice();
   if (voice) utterance.voice = voice;
 
-  utterance.onstart = () => options.onStart?.();
+  let settled = false;
+  const finish = (kind, error = null) => {
+    if (settled) return;
+    settled = true;
+    if (activeUtterance === utterance) {
+      activeUtterance = null;
+      cancelActiveUtterance = null;
+    }
+    if (kind === "error") options.onError?.(error ?? "synthesis-failed");
+    else options.onEnd?.();
+  };
+
+  utterance.onstart = () => {
+    if (activeUtterance === utterance) options.onStart?.();
+  };
   utterance.onend = () => {
-    if (activeUtterance === utterance) activeUtterance = null;
-    options.onEnd?.();
+    finish("end");
   };
   utterance.onerror = (event) => {
-    if (activeUtterance === utterance) activeUtterance = null;
-    options.onError?.(event?.error ?? "synthesis-failed");
+    finish("error", event?.error);
   };
 
   activeUtterance = utterance; // Prevent mobile Safari from collecting it mid-playback.
+  cancelActiveUtterance = () => finish("end");
   if (engine.paused) engine.resume?.();
   engine.speak(utterance);
   return true;

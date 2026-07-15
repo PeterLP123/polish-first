@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PronunciationCard } from "./LearningControls.jsx";
+import { AudioButton, PronunciationCard } from "./LearningControls.jsx";
 
 const phrase = { id: "test-phrase", polish: "Dzień dobry", phonetic: "jen DOH-brih", english: "Good morning" };
 
@@ -30,5 +30,16 @@ describe("mobile pronunciation input", () => {
 
     expect(screen.getByText("100%")).toBeInTheDocument();
     expect(onComplete).toHaveBeenCalledWith(1);
+  });
+
+  it("clears the previous audio button when another phrase starts", () => {
+    render(<><AudioButton text="Dzień dobry" label="First" /><AudioButton text="Do widzenia" label="Second" /></>);
+
+    fireEvent.click(screen.getByRole("button", { name: "First: Dzień dobry" }));
+    expect(screen.getByRole("button", { name: "Stop: Dzień dobry" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Second: Do widzenia" }));
+    expect(screen.getByRole("button", { name: "First: Dzień dobry" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Stop: Do widzenia" })).toHaveAttribute("aria-pressed", "true");
   });
 });
