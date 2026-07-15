@@ -28,6 +28,7 @@ async function resetAt(page, view) {
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await expect(page.locator("main.content")).toBeVisible();
+  await expect(page.locator("main.content h1")).toBeVisible();
   await settlePage(page);
 }
 

@@ -64,7 +64,7 @@ describe("guided learning flow", () => {
     fireEvent.click(screen.getByRole("link", { name: /skip to main content/i }));
     expect(main).toHaveFocus();
     expect(window.location.hash).toBe("#course");
-    expect(screen.getByRole("heading", { name: /polish for real life/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /polish for real life/i })).toBeInTheDocument();
   });
 
   it("explains the memory system until the first phrase is learned", async () => {

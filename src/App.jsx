@@ -1,21 +1,16 @@
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   Brain,
   Check,
   ChevronRight,
   CircleHelp,
   Flame,
-  GraduationCap,
   Headphones,
   Lightbulb,
-  LockKeyhole,
   Mic,
   Play,
-  Search,
   Sparkles,
   Star,
   Target,
@@ -23,41 +18,30 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { allPhrases, courseTopics, grammarGuides, soundLessons, units } from "./data/course.js";
+import { allPhrases, units } from "./data/course.js";
 import { addStudy, buildDailySession, currentSession, effectiveStreak, getDuePhrases, loadProgressResult, localDate, masterySummary, recordAttempt, recordDialogue, recordMilestoneResult, saveProgress, scoreForRating, todayMinutes } from "./lib/learning.js";
 import { viewFromHash } from "./lib/navigation.js";
 import { listenForPolish, speakPolish, speechRecognitionMessage } from "./lib/speech.js";
-import DialoguesPage from "./components/DialoguesView.jsx";
-import GuidedSession from "./components/GuidedSession.jsx";
 import { AudioButton, PronunciationCard } from "./components/LearningControls.jsx";
 import { BottomNav, MobileHeader, NAV_ITEMS, Sidebar } from "./components/Navigation.jsx";
-import PracticePage from "./components/PracticeView.jsx";
-import ProgressDataView from "./components/ProgressDataView.jsx";
+import ProgressRing from "./components/ProgressRing.jsx";
 
-function ProgressRing({ value, size = 86, stroke = 8, children }) {
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (Math.min(100, value) / 100) * circumference;
+const CourseView = lazy(() => import("./components/CourseView.jsx"));
+const DialoguesPage = lazy(() => import("./components/DialoguesView.jsx"));
+const GrammarView = lazy(() => import("./components/GrammarView.jsx"));
+const GuidedSession = lazy(() => import("./components/GuidedSession.jsx"));
+const PracticePage = lazy(() => import("./components/PracticeView.jsx"));
+const ProgressDataView = lazy(() => import("./components/ProgressDataView.jsx"));
+const SoundsView = lazy(() => import("./components/SoundsView.jsx"));
 
-  return (
-    <div className="progress-ring" style={{ width: size, height: size }}>
-      <svg width={size} height={size} aria-hidden="true">
-        <circle className="ring-track" cx={size / 2} cy={size / 2} r={radius} fill="none" strokeWidth={stroke} />
-        <circle
-          className="ring-value"
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          strokeWidth={stroke}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </svg>
-      <div className="ring-content">{children}</div>
-    </div>
-  );
+function FocusWhenReady({ routeKey, mainRef, children }) {
+  useEffect(() => {
+    const heading = mainRef.current?.querySelector("h1");
+    if (!heading) return;
+    heading.setAttribute("tabindex", "-1");
+    heading.focus({ preventScroll: true });
+  }, [mainRef, routeKey]);
+  return children;
 }
 
 function StatPill({ icon: Icon, value, label, tone }) {
@@ -177,131 +161,6 @@ function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal, onStartS
         <div className="wide-progress"><span style={{ width: `${coursePercent}%` }} /></div>
         <p>{progress.learnedPhrases.length} of {allPhrases.length} useful phrases practised</p>
       </section>
-    </div>
-  );
-}
-
-function UnitCard({ unit, progress, onOpenUnit, highlight = false }) {
-  const done = progress.completedUnits.includes(unit.id);
-  const learned = unit.phrases.filter((phrase) => progress.learnedPhrases.includes(phrase.id)).length;
-  const percent = Math.round((learned / unit.phrases.length) * 100);
-  return (
-    <article className={`unit-card ${done ? "completed" : ""} ${highlight ? "frontier-highlight" : ""}`} id={`unit-card-${unit.id}`}>
-      <div className="unit-card-top">
-        <span className="unit-index">{done ? <Check size={18} /> : String(unit.number).padStart(2, "0")}</span>
-        <span className="unit-art">{unit.icon}</span>
-        {done && <span className="complete-label">Complete</span>}
-      </div>
-      <div className="unit-tags"><small>{unit.topic}</small><span>{unit.stage}</span></div>
-      <h2>{unit.title}</h2>
-      <p>{unit.description}</p>
-      <div className="unit-progress"><span style={{ width: `${done ? 100 : percent}%` }} /></div>
-      <div className="unit-footer"><span><Headphones size={15} /> {unit.phrases.length} phrases</span><span>{unit.time} min</span></div>
-      <button className={done ? "secondary-button full" : "primary-button full"} onClick={() => onOpenUnit(unit)}>
-        {done ? "Practise again" : percent ? "Continue unit" : "Start unit"}<ArrowRight size={17} />
-      </button>
-    </article>
-  );
-}
-
-const COURSE_STAGES = [...new Set(units.map((unit) => unit.stage))];
-
-function CourseView({ progress, onOpenUnit }) {
-  const [query, setQuery] = useState("");
-  const [topic, setTopic] = useState("All");
-  const nextUnit = units.find((unit) => !progress.completedUnits.includes(unit.id)) || units[units.length - 1];
-  const [openStages, setOpenStages] = useState(() => new Set([nextUnit.stage]));
-  const [showChip, setShowChip] = useState(false);
-  const [highlightId, setHighlightId] = useState(null);
-  const normalizedQuery = query.trim().toLocaleLowerCase("pl");
-  const filtering = Boolean(normalizedQuery) || topic !== "All";
-  const visibleUnits = units.filter((unit) => {
-    const matchesTopic = topic === "All" || unit.topic === topic;
-    const searchable = `${unit.title} ${unit.description} ${unit.topic} ${unit.phrases.map((phrase) => `${phrase.polish} ${phrase.english}`).join(" ")}`.toLocaleLowerCase("pl");
-    return matchesTopic && (!normalizedQuery || searchable.includes(normalizedQuery));
-  });
-
-  useEffect(() => {
-    const onScroll = () => setShowChip(window.scrollY > 600);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const toggleStage = (stage) => setOpenStages((current) => {
-    const next = new Set(current);
-    if (next.has(stage)) next.delete(stage);
-    else next.add(stage);
-    return next;
-  });
-
-  const jumpToFrontier = () => {
-    setOpenStages((current) => new Set(current).add(nextUnit.stage));
-    setHighlightId(nextUnit.id);
-    const behavior = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-    window.setTimeout(() => document.getElementById(`unit-card-${nextUnit.id}`)?.scrollIntoView({ behavior, block: "center" }), 60);
-    window.setTimeout(() => setHighlightId(null), 2200);
-  };
-
-  return (
-    <div className="view-stack">
-      <header className="page-header">
-        <div><span className="eyebrow red"><GraduationCap size={15} /> THE CONVERSATION PATH</span><h1>Polish for real life</h1><p>{allPhrases.length} high-value phrases across {units.length} practical units, from first words to extended B1 and B2-bridge conversations. Nothing is locked.</p></div>
-        <ProgressRing value={(progress.completedUnits.length / units.length) * 100}><strong>{progress.completedUnits.length}</strong><span>of {units.length}</span></ProgressRing>
-      </header>
-      <section className="course-continue panel" aria-label="Continue learning">
-        <div className="course-continue-icon" aria-hidden="true">{nextUnit.icon}</div>
-        <div><span className="eyebrow">UP NEXT · {nextUnit.stage}</span><h2>{nextUnit.title}</h2><p>{nextUnit.phrases.length} phrases · {nextUnit.time} min</p></div>
-        <button className="primary-button" onClick={() => onOpenUnit(nextUnit)}>{progress.learnedPhrases.some((id) => id.startsWith(`${nextUnit.id}-`)) ? "Continue unit" : "Start unit"}<ArrowRight size={17} /></button>
-      </section>
-      <section className="course-tools" aria-label="Find a course unit">
-        <label className="course-search">
-          <Search size={19} aria-hidden="true" />
-          <span className="sr-only">Search units and phrases</span>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search units or phrases…" type="search" inputMode="search" enterKeyHint="search" autoComplete="off" aria-label="Search units or phrases" />
-        </label>
-        <div className="topic-filters" role="group" aria-label="Filter units by topic">
-          {courseTopics.map((item) => <button key={item} className={topic === item ? "active" : ""} onClick={() => setTopic(item)} aria-pressed={topic === item}>{item}</button>)}
-        </div>
-        {filtering && <p className="course-result-count" aria-live="polite">Showing {visibleUnits.length} of {units.length} units</p>}
-      </section>
-      {filtering ? (
-        <div className="course-grid">
-          {visibleUnits.map((unit) => <UnitCard key={unit.id} unit={unit} progress={progress} onOpenUnit={onOpenUnit} />)}
-        </div>
-      ) : (
-        COURSE_STAGES.map((stage, stageIndex) => {
-          const stageUnits = units.filter((unit) => unit.stage === stage);
-          const doneCount = stageUnits.filter((unit) => progress.completedUnits.includes(unit.id)).length;
-          const stageDone = doneCount === stageUnits.length;
-          const open = openStages.has(stage);
-          const panelId = `stage-panel-${stageIndex}`;
-          return (
-            <section className={`stage-section ${open ? "open" : ""} ${stageDone ? "complete" : ""}`} key={stage}>
-              <button className="stage-header" aria-expanded={open} aria-controls={panelId} onClick={() => toggleStage(stage)}>
-                <span className="stage-index" aria-hidden="true">{stageDone ? <Check size={16} /> : String(stageIndex + 1).padStart(2, "0")}</span>
-                <span className="stage-copy"><small>STAGE {stageIndex + 1} · {stageUnits.length} UNITS</small><strong>{stage}</strong></span>
-                <span className="stage-meta">
-                  <span className="stage-count">{doneCount} of {stageUnits.length} complete</span>
-                  <span className="stage-progress" aria-hidden="true"><span style={{ width: `${Math.round((doneCount / stageUnits.length) * 100)}%` }} /></span>
-                </span>
-                <ChevronRight size={19} className="stage-chevron" aria-hidden="true" />
-              </button>
-              {open && (
-                <div className="course-grid" id={panelId}>
-                  {stageUnits.map((unit) => <UnitCard key={unit.id} unit={unit} progress={progress} onOpenUnit={onOpenUnit} highlight={highlightId === unit.id} />)}
-                </div>
-              )}
-            </section>
-          );
-        })
-      )}
-      {!filtering && showChip && createPortal(
-        <button className="frontier-chip" onClick={jumpToFrontier}>
-          <Play size={14} fill="currentColor" /> Up next · Unit {nextUnit.number}
-        </button>,
-        document.body,
-      )}
-      {filtering && !visibleUnits.length && <section className="course-empty panel"><Search size={28} /><h2>No matching units</h2><p>Try a broader phrase or show every topic.</p><button className="secondary-button" onClick={() => { setQuery(""); setTopic("All"); }}>Clear filters</button></section>}
     </div>
   );
 }
@@ -440,93 +299,6 @@ function SpeechMiniPractice({ phrase, onSuccess }) {
   );
 }
 
-function SoundsView({ award }) {
-  const [selected, setSelected] = useState(soundLessons[0]);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const pickerRef = useRef(null);
-  const pickerTriggerRef = useRef(null);
-  const related = allPhrases.filter((phrase) => selected.examples.some((example) => phrase.polish.toLowerCase().includes(example.toLowerCase()))).slice(0, 5);
-  const fallback = related.length ? related : allPhrases.filter((phrase) => phrase.polish.toLowerCase().includes(selected.sound.toLowerCase().charAt(0))).slice(0, 5);
-
-  useEffect(() => {
-    if (!pickerOpen) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    pickerRef.current?.querySelector("button")?.focus();
-    const handleKey = (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setPickerOpen(false);
-        pickerTriggerRef.current?.focus();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const controls = [...(pickerRef.current?.querySelectorAll('button:not(:disabled), [tabindex]:not([tabindex="-1"])') ?? [])];
-      if (!controls.length) return;
-      if (event.shiftKey && document.activeElement === controls[0]) { event.preventDefault(); controls.at(-1).focus(); }
-      if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
-    };
-    window.addEventListener("keydown", handleKey, true);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKey, true);
-    };
-  }, [pickerOpen]);
-
-  const closePicker = (restoreFocus = false) => {
-    setPickerOpen(false);
-    if (restoreFocus) window.setTimeout(() => pickerTriggerRef.current?.focus(), 0);
-  };
-
-  return (
-    <div className="view-stack sounds-page">
-      <header className="page-header"><div><span className="eyebrow red"><Mic size={15} /> POLISH SOUND LAB</span><h1>Make Polish feel speakable</h1><p>The spelling is consistent once you know the code. Choose a sound, hear it in context, and repeat.</p></div><div className="sound-wave" aria-hidden="true">{[1,2,3,4,5,6,7].map((n) => <i key={n} />)}</div></header>
-      <button ref={pickerTriggerRef} className="mobile-picker-trigger panel" onClick={() => setPickerOpen(true)} aria-haspopup="dialog" aria-expanded={pickerOpen}><span><small>SELECTED SOUND</small><strong>{selected.sound} · {selected.like}</strong></span><span>Change <ChevronRight size={17} /></span></button>
-      <div className="sound-layout">
-        {pickerOpen && <button className="sheet-scrim sound-picker-scrim" onClick={() => closePicker(true)} aria-label="Close sound picker" />}
-        <aside ref={pickerRef} className={`sound-list panel ${pickerOpen ? "open" : ""}`} role={pickerOpen ? "dialog" : undefined} aria-modal={pickerOpen || undefined} aria-label="Choose a Polish sound"><div className="picker-heading"><span><span className="eyebrow">THE SOUND CODE</span><strong>Choose a sound</strong></span><button className="icon-button picker-close" onClick={() => closePicker(true)} aria-label="Close sound picker"><X size={19} /></button></div>{soundLessons.map((sound) => <button key={sound.sound} className={selected.sound === sound.sound ? "active" : ""} onClick={() => { setSelected(sound); closePicker(true); }}><strong>{sound.sound}</strong><span>{sound.like}</span><ChevronRight size={17} /></button>)}</aside>
-        <section className="sound-detail" aria-label={`${selected.sound} sound lesson`}>
-          <div className="sound-hero">
-            <div className="sound-letter">{selected.sound}</div>
-            <div><span className="eyebrow light">SOUNDS LIKE</span><h2>{selected.like}</h2><p>{selected.tip}</p></div>
-          </div>
-          <div className="example-sounds">
-            {selected.examples.map((example) => <button key={example} onClick={() => speakPolish(example, 0.7)}><Volume2 size={17} /><strong lang="pl">{example}</strong></button>)}
-          </div>
-          <div className="mouth-tip"><span>👄</span><div><strong>Mouth cue</strong><p>{selected.tip}</p></div></div>
-          <div className="section-heading-row compact"><div><span className="eyebrow">TRY IT IN A PHRASE</span><h2>Hear the sound doing real work</h2></div></div>
-          <div className="sound-phrases">
-            {fallback.map((phrase) => <article key={phrase.id}><AudioButton text={phrase.polish} compact /><div><strong lang="pl">{phrase.polish}</strong><span className="phonetic">{phrase.phonetic}</span><small>{phrase.english}</small></div><button className="tiny-mic" onClick={() => award({ xp: 3, phraseId: phrase.id }, "+3 XP · Spoken aloud")} aria-label={`Mark ${phrase.polish} as spoken`}><Mic size={16} /></button></article>)}
-          </div>
-          <div className="sound-note"><Lightbulb size={18} /><p><strong>A useful approximation, not a replacement for listening.</strong> English respellings get you confidently close. Polish audio trains the details your ears need.</p></div>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-function GrammarView({ onNavigate }) {
-  const PAGE_SIZE = 12;
-  const [query, setQuery] = useState("");
-  const [openGuide, setOpenGuide] = useState(grammarGuides[0]?.id ?? grammarGuides[0]?.title);
-  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
-  const normalizedQuery = query.trim().toLocaleLowerCase("pl");
-  const visibleGuides = grammarGuides.filter((guide) => `${guide.title} ${guide.example} ${guide.meaning} ${guide.body}`.toLocaleLowerCase("pl").includes(normalizedQuery));
-  const shownGuides = normalizedQuery ? visibleGuides : visibleGuides.slice(0, visibleLimit);
-  return (
-    <div className="view-stack grammar-page">
-      <header className="page-header"><div><span className="eyebrow red"><BookOpen size={15} /> FRIENDLY GRAMMAR</span><h1>Patterns, not paperwork</h1><p>Enough grammar to understand what you are saying — explained through phrases you can use today.</p></div></header>
-      <div className="grammar-intro"><div className="grammar-intro-icon">ą</div><div><span className="eyebrow light">YOUR LEARNER PROMISE</span><h2>You do not need every ending before you speak.</h2><p>Start with dependable chunks, then connect them into longer ideas. Accuracy will grow around real conversations.</p></div></div>
-      <div className="grammar-tools"><label className="course-search"><Search size={19} aria-hidden="true" /><span className="sr-only">Search grammar patterns</span><input value={query} onChange={(event) => { setQuery(event.target.value); setVisibleLimit(PAGE_SIZE); }} placeholder="Search patterns or examples…" type="search" aria-label="Search grammar patterns" /></label><button className="secondary-button" onClick={() => onNavigate("practice", { mode: "grammar", topic: "All" })}>Practise grammar <ArrowRight size={17} /></button></div>
-      <p className="grammar-result-count" aria-live="polite">Showing {shownGuides.length} of {visibleGuides.length} pattern{visibleGuides.length === 1 ? "" : "s"}</p>
-      <div className="grammar-grid">{shownGuides.map((guide) => { const id = guide.id ?? guide.title; const open = openGuide === id; const panelId = `grammar-detail-${String(id).replace(/[^a-z0-9-]/gi, "-")}`; return <article className={`grammar-card ${open ? "expanded" : ""}`} key={guide.title}><button className="grammar-summary" onClick={() => setOpenGuide(open ? null : id)} aria-expanded={open} aria-controls={panelId}><span className="grammar-number">{String(grammarGuides.indexOf(guide) + 1).padStart(2, "0")}</span><span><strong>{guide.title}</strong><small lang="pl">{guide.example}</small></span><ChevronRight size={19} /></button><div className="grammar-example"><strong lang="pl">{guide.example}</strong><span>{guide.meaning}</span><AudioButton text={guide.example.split("→")[0].replace(/[()]/g, "")} compact /></div>{open && <p id={panelId}>{guide.body}</p>}</article>; })}</div>
-      {!normalizedQuery && shownGuides.length < visibleGuides.length && <button className="secondary-button grammar-load-more" onClick={() => setVisibleLimit((limit) => Math.min(limit + PAGE_SIZE, visibleGuides.length))}>Show {Math.min(PAGE_SIZE, visibleGuides.length - shownGuides.length)} more patterns <ArrowRight size={17} /></button>}
-      {!visibleGuides.length && <section className="course-empty panel"><Search size={28} /><h2>No matching pattern</h2><p>Try a shorter search or browse every explainer.</p><button className="secondary-button" onClick={() => setQuery("")}>Clear search</button></section>}
-      <div className="grammar-reassurance"><Lightbulb size={23} /><div><strong>When in doubt, use the phrase you know.</strong><p>Being understood is the goal. A friendly, imperfect sentence beats a perfect sentence that stays in your head.</p></div></div>
-    </div>
-  );
-}
-
 function App() {
   const [initialLoad] = useState(() => loadProgressResult());
   const [route, setRoute] = useState(() => viewFromHash(window.location.hash));
@@ -580,11 +352,6 @@ function App() {
     if (!window.location.hash) window.history.replaceState(null, "", "#home");
   }, []);
   useEffect(() => {
-    const heading = mainRef.current?.querySelector("h1");
-    if (heading) {
-      heading.setAttribute("tabindex", "-1");
-      heading.focus({ preventScroll: true });
-    }
     const label = view === "session" ? "Daily session" : NAV_ITEMS.find((item) => item.id === view)?.label ?? "Today";
     document.title = `${label} · Cześć!`;
   }, [view]);
@@ -734,14 +501,18 @@ function App() {
         {!focusMode && <MobileHeader label={currentLabel} xp={progress.xp} />}
         {storageIssue && <div className="storage-alert" role="alert"><CircleHelp size={18} /><span><strong>Local progress needs attention</strong>{storageIssue.message}</span><button className="secondary-button" onClick={retryLocalSave}>{storageIssue.kind === "recovery" ? "Use fresh progress" : "Try saving again"}</button></div>}
         <main id="main-content" className="content" ref={mainRef} tabIndex={-1}>
-          {view === "home" && <HomeView progress={progress} onNavigate={navigate} onOpenUnit={openUnit} award={award} onSetGoal={(minutes) => setProgress((current) => ({ ...current, dailyGoal: minutes }))} onStartSession={() => startSession(false)} />}
-          {view === "session" && <GuidedSession session={progress.activeSession} onCommit={commitSessionTask} onExit={() => navigate("home")} onRestart={() => startSession(true)} upcomingDue={getDuePhrases(progress).length} />}
-          {view === "course" && <CourseView progress={progress} onOpenUnit={openUnit} />}
-          {view === "practice" && <PracticePage progress={progress} award={award} onAttempt={recordPracticeAttempt} initialMode={route.practice.mode} initialTopic={route.practice.topic} />}
-          {view === "sounds" && <SoundsView award={award} />}
-          {view === "dialogues" && <DialoguesPage progress={progress} onCorrect={() => award({ xp: 10, minutes: 1 }, "+10 XP · Natural response")} onCompleteDialogue={completeDialogue} />}
-          {view === "grammar" && <GrammarView onNavigate={navigate} />}
-          {view === "data" && <ProgressDataView progress={progress} onReplaceProgress={replaceProgress} onNavigatePractice={(mode, topic) => navigate("practice", { mode, topic })} onOpenUnit={openUnit} onCompleteMilestone={completeMilestone} onAttempt={recordPracticeAttempt} />}
+          <Suspense fallback={<div className="route-loading" role="status">Loading this section…</div>}>
+            <FocusWhenReady routeKey={view} mainRef={mainRef}>
+              {view === "home" && <HomeView progress={progress} onNavigate={navigate} onOpenUnit={openUnit} award={award} onSetGoal={(minutes) => setProgress((current) => ({ ...current, dailyGoal: minutes }))} onStartSession={() => startSession(false)} />}
+              {view === "session" && <GuidedSession session={progress.activeSession} onCommit={commitSessionTask} onExit={() => navigate("home")} onRestart={() => startSession(true)} upcomingDue={getDuePhrases(progress).length} />}
+              {view === "course" && <CourseView progress={progress} onOpenUnit={openUnit} />}
+              {view === "practice" && <PracticePage progress={progress} award={award} onAttempt={recordPracticeAttempt} initialMode={route.practice.mode} initialTopic={route.practice.topic} />}
+              {view === "sounds" && <SoundsView award={award} />}
+              {view === "dialogues" && <DialoguesPage progress={progress} onCorrect={() => award({ xp: 10, minutes: 1 }, "+10 XP · Natural response")} onCompleteDialogue={completeDialogue} />}
+              {view === "grammar" && <GrammarView onNavigate={navigate} />}
+              {view === "data" && <ProgressDataView progress={progress} onReplaceProgress={replaceProgress} onNavigatePractice={(mode, topic) => navigate("practice", { mode, topic })} onOpenUnit={openUnit} onCompleteMilestone={completeMilestone} onAttempt={recordPracticeAttempt} />}
+            </FocusWhenReady>
+          </Suspense>
         </main>
       </div>
 
