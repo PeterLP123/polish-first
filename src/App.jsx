@@ -93,7 +93,7 @@ function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal, onStartS
         </div>
         <div className="header-stats">
           <StatPill icon={Flame} value={effectiveStreak(progress)} label="day streak" tone="orange" />
-          <StatPill icon={Zap} value={progress.xp} label="total XP" tone="yellow" />
+          <span className="desktop-xp-stat"><StatPill icon={Zap} value={progress.xp} label="total XP" tone="yellow" /></span>
         </div>
       </section>
 
@@ -245,7 +245,7 @@ function CourseView({ progress, onOpenUnit }) {
   return (
     <div className="view-stack">
       <header className="page-header">
-        <div><span className="eyebrow red"><GraduationCap size={15} /> THE CONVERSATION PATH</span><h1>Polish for real life</h1><p>{allPhrases.length} high-value phrases across {units.length} practical beginner units. Nothing is locked.</p></div>
+        <div><span className="eyebrow red"><GraduationCap size={15} /> THE CONVERSATION PATH</span><h1>Polish for real life</h1><p>{allPhrases.length} high-value phrases across {units.length} practical units, from first words to extended B1 and B2-bridge conversations. Nothing is locked.</p></div>
         <ProgressRing value={(progress.completedUnits.length / units.length) * 100}><strong>{progress.completedUnits.length}</strong><span>of {units.length}</span></ProgressRing>
       </header>
       <section className="course-continue panel" aria-label="Continue learning">
@@ -306,12 +306,34 @@ function CourseView({ progress, onOpenUnit }) {
   );
 }
 
-function UnitLesson({ unit, progress, onClose, award }) {
+function UnitLesson({ unit, progress, onClose, award, returnFocus }) {
   const firstUnlearned = unit.phrases.findIndex((phrase) => !progress.learnedPhrases.includes(phrase.id));
   const [index, setIndex] = useState(firstUnlearned === -1 ? 0 : firstUnlearned);
   const [showMeaning, setShowMeaning] = useState(false);
+  const dialogRef = useRef(null);
   const phrase = unit.phrases[index];
   const isLast = index === unit.phrases.length - 1;
+
+  const closeLesson = () => {
+    onClose();
+    window.setTimeout(() => returnFocus?.focus?.(), 0);
+  };
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialogRef.current?.querySelector("button")?.focus();
+    const handleKeys = (event) => {
+      if (event.key === "Escape") { event.stopPropagation(); closeLesson(); return; }
+      if (event.key !== "Tab") return;
+      const controls = [...(dialogRef.current?.querySelectorAll('button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])') ?? [])];
+      if (!controls.length) return;
+      if (event.shiftKey && document.activeElement === controls[0]) { event.preventDefault(); controls.at(-1).focus(); }
+      if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
+    };
+    window.addEventListener("keydown", handleKeys, true);
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", handleKeys, true); };
+  }, []);
 
   const next = () => {
     const isNew = !progress.learnedPhrases.includes(phrase.id);
@@ -319,7 +341,7 @@ function UnitLesson({ unit, progress, onClose, award }) {
     if (isLast) {
       const unitIsNew = !progress.completedUnits.includes(unit.id);
       award({ xp: unitIsNew ? 40 : 10, minutes: 2, unitId: unit.id }, unitIsNew ? `Unit complete · +40 XP` : "Review complete · +10 XP");
-      onClose();
+      closeLesson();
     } else {
       setIndex((current) => current + 1);
       setShowMeaning(false);
@@ -332,10 +354,10 @@ function UnitLesson({ unit, progress, onClose, award }) {
   };
 
   return (
-    <div className="lesson-overlay" role="dialog" aria-modal="true" aria-label={`${unit.title} lesson`}>
+    <div ref={dialogRef} className="lesson-overlay" role="dialog" aria-modal="true" aria-label={`${unit.title} lesson`}>
       <div className="lesson-shell">
         <header className="lesson-header">
-          <button className="lesson-close" onClick={onClose} aria-label="Finish this lesson later"><X size={21} /><span>Finish later</span></button>
+          <button className="lesson-close" onClick={closeLesson} aria-label="Finish this lesson later"><X size={21} /><span>Finish later</span></button>
           <div className="lesson-header-center"><span>UNIT {unit.number} · {unit.title}</span><div className="lesson-progress" role="progressbar" aria-label="Lesson progress" aria-valuemin="1" aria-valuemax={unit.phrases.length} aria-valuenow={index + 1}><span style={{ width: `${((index + 1) / unit.phrases.length) * 100}%` }} /></div></div>
           <span className="lesson-count">{index + 1} / {unit.phrases.length}</span>
         </header>
@@ -420,14 +442,17 @@ function SpeechMiniPractice({ phrase, onSuccess }) {
 
 function SoundsView({ award }) {
   const [selected, setSelected] = useState(soundLessons[0]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const related = allPhrases.filter((phrase) => selected.examples.some((example) => phrase.polish.toLowerCase().includes(example.toLowerCase()))).slice(0, 5);
   const fallback = related.length ? related : allPhrases.filter((phrase) => phrase.polish.toLowerCase().includes(selected.sound.toLowerCase().charAt(0))).slice(0, 5);
 
   return (
     <div className="view-stack sounds-page">
       <header className="page-header"><div><span className="eyebrow red"><Mic size={15} /> POLISH SOUND LAB</span><h1>Make Polish feel speakable</h1><p>The spelling is consistent once you know the code. Choose a sound, hear it in context, and repeat.</p></div><div className="sound-wave" aria-hidden="true">{[1,2,3,4,5,6,7].map((n) => <i key={n} />)}</div></header>
+      <button className="mobile-picker-trigger panel" onClick={() => setPickerOpen(true)} aria-haspopup="dialog"><span><small>SELECTED SOUND</small><strong>{selected.sound} · {selected.like}</strong></span><span>Change <ChevronRight size={17} /></span></button>
       <div className="sound-layout">
-        <aside className="sound-list panel"><span className="eyebrow">THE SOUND CODE</span>{soundLessons.map((sound) => <button key={sound.sound} className={selected.sound === sound.sound ? "active" : ""} onClick={() => setSelected(sound)}><strong>{sound.sound}</strong><span>{sound.like}</span><ChevronRight size={17} /></button>)}</aside>
+        {pickerOpen && <button className="sheet-scrim sound-picker-scrim" onClick={() => setPickerOpen(false)} aria-label="Close sound picker" />}
+        <aside className={`sound-list panel ${pickerOpen ? "open" : ""}`} role={pickerOpen ? "dialog" : undefined} aria-modal={pickerOpen || undefined} aria-label="Choose a Polish sound"><div className="picker-heading"><span><span className="eyebrow">THE SOUND CODE</span><strong>Choose a sound</strong></span><button className="icon-button picker-close" onClick={() => setPickerOpen(false)} aria-label="Close sound picker"><X size={19} /></button></div>{soundLessons.map((sound) => <button key={sound.sound} className={selected.sound === sound.sound ? "active" : ""} onClick={() => { setSelected(sound); setPickerOpen(false); }}><strong>{sound.sound}</strong><span>{sound.like}</span><ChevronRight size={17} /></button>)}</aside>
         <main className="sound-detail">
           <div className="sound-hero">
             <div className="sound-letter">{selected.sound}</div>
@@ -448,12 +473,19 @@ function SoundsView({ award }) {
   );
 }
 
-function GrammarView() {
+function GrammarView({ onNavigate }) {
+  const [query, setQuery] = useState("");
+  const [openGuide, setOpenGuide] = useState(grammarGuides[0]?.id ?? grammarGuides[0]?.title);
+  const normalizedQuery = query.trim().toLocaleLowerCase("pl");
+  const visibleGuides = grammarGuides.filter((guide) => `${guide.title} ${guide.example} ${guide.meaning} ${guide.body}`.toLocaleLowerCase("pl").includes(normalizedQuery));
   return (
-    <div className="view-stack">
+    <div className="view-stack grammar-page">
       <header className="page-header"><div><span className="eyebrow red"><BookOpen size={15} /> FRIENDLY GRAMMAR</span><h1>Patterns, not paperwork</h1><p>Enough grammar to understand what you are saying — explained through phrases you can use today.</p></div></header>
-      <div className="grammar-intro"><div className="grammar-intro-icon">ą</div><div><span className="eyebrow light">YOUR BEGINNER PROMISE</span><h2>You do not need every ending before you speak.</h2><p>Start with dependable chunks. Notice the patterns below. Accuracy will grow around real conversations.</p></div></div>
-      <div className="grammar-grid">{grammarGuides.map((guide, index) => <article className="grammar-card" key={guide.title}><span className="grammar-number">{String(index + 1).padStart(2, "0")}</span><h2>{guide.title}</h2><div className="grammar-example"><strong>{guide.example}</strong><span>{guide.meaning}</span><AudioButton text={guide.example.split("→")[0].replace(/[()]/g, "")} compact /></div><p>{guide.body}</p></article>)}</div>
+      <div className="grammar-intro"><div className="grammar-intro-icon">ą</div><div><span className="eyebrow light">YOUR LEARNER PROMISE</span><h2>You do not need every ending before you speak.</h2><p>Start with dependable chunks, then connect them into longer ideas. Accuracy will grow around real conversations.</p></div></div>
+      <div className="grammar-tools"><label className="course-search"><Search size={19} aria-hidden="true" /><span className="sr-only">Search grammar patterns</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search patterns or examples…" type="search" aria-label="Search grammar patterns" /></label><button className="secondary-button" onClick={() => onNavigate("practice", { mode: "grammar", topic: "All" })}>Practise grammar <ArrowRight size={17} /></button></div>
+      <p className="grammar-result-count" aria-live="polite">{visibleGuides.length} pattern{visibleGuides.length === 1 ? "" : "s"}</p>
+      <div className="grammar-grid">{visibleGuides.map((guide, index) => { const id = guide.id ?? guide.title; const open = openGuide === id; return <article className={`grammar-card ${open ? "expanded" : ""}`} key={guide.title}><button className="grammar-summary" onClick={() => setOpenGuide(open ? null : id)} aria-expanded={open}><span className="grammar-number">{String(grammarGuides.indexOf(guide) + 1).padStart(2, "0")}</span><span><strong>{guide.title}</strong><small>{guide.example}</small></span><ChevronRight size={19} /></button><div className="grammar-example"><strong>{guide.example}</strong><span>{guide.meaning}</span><AudioButton text={guide.example.split("→")[0].replace(/[()]/g, "")} compact /></div>{open && <p>{guide.body}</p>}</article>; })}</div>
+      {!visibleGuides.length && <section className="course-empty panel"><Search size={28} /><h2>No matching pattern</h2><p>Try a shorter search or browse every explainer.</p><button className="secondary-button" onClick={() => setQuery("")}>Clear search</button></section>}
       <div className="grammar-reassurance"><Lightbulb size={23} /><div><strong>When in doubt, use the phrase you know.</strong><p>Being understood is the goal. A friendly, imperfect sentence beats a perfect sentence that stays in your head.</p></div></div>
     </div>
   );
@@ -464,8 +496,8 @@ function App() {
   const view = route.view;
   const [progress, setProgress] = useState(loadProgress);
   const [activeUnit, setActiveUnit] = useState(null);
+  const unitTriggerRef = useRef(null);
   const [toast, setToast] = useState("");
-  const [navOpen, setNavOpen] = useState(false);
   const mainRef = useRef(null);
 
   useEffect(() => saveProgress(progress), [progress]);
@@ -473,7 +505,6 @@ function App() {
     const handler = (event) => {
       if (event.key === "Escape") {
         setActiveUnit(null);
-        setNavOpen(false);
       }
     };
     window.addEventListener("keydown", handler);
@@ -491,12 +522,6 @@ function App() {
   useEffect(() => {
     if (!window.location.hash) window.history.replaceState(null, "", "#home");
   }, []);
-  useEffect(() => {
-    if (!navOpen) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, [navOpen]);
   useEffect(() => {
     const heading = mainRef.current?.querySelector("h1");
     if (heading) {
@@ -516,13 +541,17 @@ function App() {
     }
   };
 
+  const openUnit = (unit) => {
+    unitTriggerRef.current = document.activeElement;
+    setActiveUnit(unit);
+  };
+
   const navigate = (nextView, practice = null) => {
     const hash = nextView === "practice" && practice
       ? `#practice?mode=${encodeURIComponent(practice.mode ?? "flashcards")}&topic=${encodeURIComponent(practice.topic ?? "All")}`
       : `#${nextView}`;
     if (window.location.hash !== hash) window.history.pushState(null, "", hash);
     setRoute(viewFromHash(hash));
-    setNavOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -589,29 +618,28 @@ function App() {
 
   const currentLabel = view === "session" ? "Daily session" : NAV_ITEMS.find((item) => item.id === view)?.label;
   const dueCount = getDuePhrases(progress).length;
+  const focusMode = view === "session";
 
   return (
-    <div className="app-shell">
-      <Sidebar view={view} progress={progress} dueCount={dueCount} open={navOpen} onNavigate={navigate} onClose={() => setNavOpen(false)} />
+    <div className={`app-shell ${focusMode ? "learning-mode" : ""}`}>
+      {!focusMode && <Sidebar view={view} progress={progress} dueCount={dueCount} onNavigate={navigate} />}
 
-      {navOpen && <button className="nav-scrim" onClick={() => setNavOpen(false)} aria-label="Close navigation" />}
-
-      <div className="app-main">
-        <MobileHeader label={currentLabel} xp={progress.xp} navOpen={navOpen} onOpen={() => setNavOpen(true)} />
+      <div className={`app-main ${focusMode ? "focus-mode" : ""}`}>
+        {!focusMode && <MobileHeader label={currentLabel} xp={progress.xp} />}
         <main className="content" ref={mainRef}>
-          {view === "home" && <HomeView progress={progress} onNavigate={navigate} onOpenUnit={setActiveUnit} award={award} onSetGoal={(minutes) => setProgress((current) => ({ ...current, dailyGoal: minutes }))} onStartSession={() => startSession(false)} />}
+          {view === "home" && <HomeView progress={progress} onNavigate={navigate} onOpenUnit={openUnit} award={award} onSetGoal={(minutes) => setProgress((current) => ({ ...current, dailyGoal: minutes }))} onStartSession={() => startSession(false)} />}
           {view === "session" && <GuidedSession session={progress.activeSession} onCommit={commitSessionTask} onExit={() => navigate("home")} onRestart={() => startSession(true)} upcomingDue={getDuePhrases(progress).length} />}
-          {view === "course" && <CourseView progress={progress} onOpenUnit={setActiveUnit} />}
+          {view === "course" && <CourseView progress={progress} onOpenUnit={openUnit} />}
           {view === "practice" && <PracticePage progress={progress} award={award} onAttempt={recordPracticeAttempt} initialMode={route.practice.mode} initialTopic={route.practice.topic} />}
           {view === "sounds" && <SoundsView award={award} />}
           {view === "dialogues" && <DialoguesPage progress={progress} onCorrect={() => award({ xp: 10, minutes: 1 }, "+10 XP · Natural response")} onCompleteDialogue={completeDialogue} />}
-          {view === "grammar" && <GrammarView />}
-          {view === "data" && <ProgressDataView progress={progress} onReplaceProgress={setProgress} onNavigatePractice={(mode, topic) => navigate("practice", { mode, topic })} onOpenUnit={(unit) => setActiveUnit(unit)} onCompleteMilestone={completeMilestone} onAttempt={recordPracticeAttempt} />}
+          {view === "grammar" && <GrammarView onNavigate={navigate} />}
+          {view === "data" && <ProgressDataView progress={progress} onReplaceProgress={setProgress} onNavigatePractice={(mode, topic) => navigate("practice", { mode, topic })} onOpenUnit={openUnit} onCompleteMilestone={completeMilestone} onAttempt={recordPracticeAttempt} />}
         </main>
       </div>
 
-      <BottomNav view={view} dueCount={dueCount} onNavigate={navigate} />
-      {activeUnit && <UnitLesson unit={activeUnit} progress={progress} onClose={() => setActiveUnit(null)} award={award} />}
+      {!focusMode && <BottomNav view={view} dueCount={dueCount} progress={progress} onNavigate={navigate} />}
+      {activeUnit && <UnitLesson unit={activeUnit} progress={progress} onClose={() => setActiveUnit(null)} award={award} returnFocus={unitTriggerRef.current} />}
       {toast && <div className="toast" role="status" aria-live="polite"><Star size={17} fill="currentColor" /> {toast}</div>}
     </div>
   );

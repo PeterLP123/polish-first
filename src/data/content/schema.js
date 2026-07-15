@@ -1,6 +1,6 @@
 export const SKILL_IDS = ["recall", "listening", "speaking", "reading", "writing", "grammar"];
 export const PRACTICE_MODES = ["flashcards", "listen", "builder", "speak", "reading", "writing", "grammar"];
-export const STAGES = ["Starter", "Everyday", "Explorer", "Next steps", "Independent", "A2 bridge"];
+export const STAGES = ["Starter", "Everyday", "Explorer", "Next steps", "Independent", "A2 bridge", "B1 foundations", "B1 in action", "B1 confidence", "B2 bridge"];
 export const TOPICS = ["Essentials", "Social", "Food", "Travel", "Daily life", "Health", "Next steps"];
 export function makeContentCatalog(collections) {
   const production = {};
