@@ -19,13 +19,25 @@ test("starts and resumes a guided daily session", async ({ page }) => {
 });
 
 test("keeps core pages within the mobile viewport", async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 });
-  for (const hash of ["#home", "#practice", "#practice?mode=reading&topic=Travel", "#dialogues", "#data"]) {
-    await page.goto(`/${hash}`);
-    await expect(page.locator("main.content")).toBeVisible();
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
-    expect(overflow).toBe(false);
+  const sizes = [
+    { width: 320, height: 700 },
+    { width: 390, height: 844 },
+    { width: 768, height: 1024 },
+    { width: 820, height: 1180 },
+  ];
+  const hashes = ["#home", "#course", "#practice", "#sounds", "#dialogues", "#grammar", "#data"];
+  for (const size of sizes) {
+    await page.setViewportSize(size);
+    for (const hash of hashes) {
+      await page.goto(`/${hash}`);
+      await expect(page.locator("main.content")).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+      expect(overflow, `${hash} should fit at ${size.width}px`).toBe(false);
+    }
+    const navTargets = await page.locator(".bottom-nav button").evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height));
+    expect(navTargets.every((height) => height >= 44), `bottom navigation targets should be at least 44px at ${size.width}px`).toBe(true);
   }
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#practice");
   for (const label of ["Flashcards", "Listen", "Build it", "Speak", "Reading", "Write", "Grammar"]) {
     await expect(page.getByRole("tab", { name: label })).toBeVisible();
