@@ -16,7 +16,7 @@ The current production version is available at [https://peterlp123.github.io/pol
 ## Included
 
 - 938 useful words and phrases across 81 practical conversation units
-- Polish audio through the browser's `pl-PL` speech voice
+- Polish audio through the browser's `pl-PL` speech voice, with a persisted voice picker in the Sound Lab
 - English-friendly pronunciation guides alongside browser-spoken Polish audio
 - Optional microphone practice, phone-dictation fallback, and approximate speech-match feedback
 - Forty-two five-turn branching dialogues with three response options per turn, from first introductions to presentations, contract questions, negotiations, and public consultations
@@ -28,7 +28,8 @@ The current production version is available at [https://peterlp123.github.io/pol
 - Ten stage checks covering listening, reading, grammar, recall, writing, dialogue, and speaking
 - XP, streaks, an adjustable daily goal, weekly activity, phrase mastery, and dialogue records saved in `localStorage`
 - Validated progress export/import plus a privacy-safe tester diagnostics summary
-- Responsive desktop, tablet, and mobile layouts
+- Keyboard shortcuts in drills: Space reveals or replays a card, 1–4 rate it
+- Responsive desktop, tablet, and mobile layouts with self-hosted fonts, so the installed app works fully offline
 
 Chrome and Edge provide the broadest support for microphone speech recognition. Audio playback and all non-microphone learning modes work in other current browsers.
 
@@ -41,3 +42,7 @@ npm run test:e2e
 ```
 
 Pushes to `main` deploy automatically to GitHub Pages. The deployment workflow supplies the `/polish-first/` base path while local development continues to use `/`.
+
+## Design
+
+The visual identity, typography, and the conventions for keeping new UI and the visual regression suite consistent are documented in [docs/design.md](docs/design.md).
