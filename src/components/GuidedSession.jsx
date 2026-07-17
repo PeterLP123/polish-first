@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Headphones, Languages, Mic, RotateCcw, Sparkles, Volume2, X } from "lucide-react";
 import { allPhrases, dialogues } from "../data/course.js";
+import { useDrillKeys } from "../lib/drill-keys.js";
 import { shuffled, similarity } from "../lib/learning.js";
 import { speakPolish } from "../lib/speech.js";
 import { DialoguePlayer } from "./DialoguesView.jsx";
@@ -47,10 +48,11 @@ export default function GuidedSession({ session, onCommit, onExit, onRestart, up
 
 function LearnTask({ phrase, onDone }) {
   const [revealed, setRevealed] = useState(false);
+  useDrillKeys({ onSpace: () => { if (revealed) speakPolish(phrase.polish); else setRevealed(true); return true; } });
   return (
     <section className="session-task-card learn-task">
       <div className="session-task-heading"><span className="eyebrow red">NEW PHRASE</span><h1>Listen, notice, then say it</h1><p>This phrase will return tomorrow for its first real review.</p></div>
-      <article className="learning-card"><div className="learning-card-audio"><AudioButton text={phrase.polish} compact /><span>Tap to hear it</span></div><div className="learning-phrase"><h2 lang="pl">{phrase.polish}</h2><p className="phonetic large">{phrase.phonetic}</p></div>{revealed ? <div className="learning-meaning"><span>IT MEANS</span><strong>{phrase.english}</strong></div> : <button className="reveal-button" onClick={() => setRevealed(true)}>Reveal meaning</button>}{phrase.tip && <div className="learning-tip"><Sparkles size={18} /><span><strong>In real life</strong>{phrase.tip}</span></div>}</article>
+      <article className="learning-card"><div className="learning-card-audio"><AudioButton text={phrase.polish} compact /><span>Tap to hear it</span></div><div className="learning-phrase"><h2 lang="pl">{phrase.polish}</h2><p className="phonetic large">{phrase.phonetic}</p></div>{revealed ? <div className="learning-meaning"><span>IT MEANS</span><strong>{phrase.english}</strong></div> : <button className="reveal-button" onClick={() => setRevealed(true)}>Reveal meaning <kbd className="key-hint" aria-hidden="true">Space</kbd></button>}{phrase.tip && <div className="learning-tip"><Sparkles size={18} /><span><strong>In real life</strong>{phrase.tip}</span></div>}</article>
       <div className="session-primary-action"><button className="primary-button" onClick={onDone} disabled={!revealed}>I said it aloud <ArrowRight size={18} /></button></div>
     </section>
   );
@@ -65,18 +67,23 @@ function ReviewTask({ task, phrase, onRate }) {
 
 function RatingButtons({ onRate, reinforcement = false }) {
   const ratings = reinforcement ? REINFORCEMENT_RATINGS : RATINGS;
-  return <div className="srs-rating-row session-ratings" aria-label="How well did you remember?">{ratings.map((rating) => <button key={rating.id} className={`rating-${rating.id}`} onClick={() => onRate(rating.id)}><strong>{rating.label}</strong><small>{rating.hint}</small></button>)}</div>;
+  return <div className="srs-rating-row session-ratings" aria-label="How well did you remember?">{ratings.map((rating, index) => <button key={rating.id} className={`rating-${rating.id}`} onClick={() => onRate(rating.id)}><strong>{rating.label}</strong><small>{rating.hint}</small><kbd className="key-hint" aria-hidden="true">{index + 1}</kbd></button>)}</div>;
 }
 
 function RecallTask({ phrase, onRate, reinforcement = false }) {
   const [revealed, setRevealed] = useState(false);
+  useDrillKeys({
+    onSpace: () => { if (revealed) speakPolish(phrase.polish); else setRevealed(true); return true; },
+    onRate: (rating) => { if (!revealed) return false; onRate(rating); return true; },
+  });
   return (
-    <section className="session-task-card"><div className="session-task-heading"><span className="eyebrow"><RotateCcw size={14} /> RETRIEVE</span><h1>What does this mean?</h1><p>Try to recall it before revealing the answer.</p></div><article className={`flashcard ${revealed ? "flipped" : ""}`}><AudioButton text={phrase.polish} compact /><h2 lang="pl">{phrase.polish}</h2><p className="phonetic large">{phrase.phonetic}</p>{revealed ? <div className="flashcard-answer"><span>{phrase.english}</span>{phrase.tip && <small>{phrase.tip}</small>}</div> : <button className="flashcard-reveal" onClick={() => setRevealed(true)}>Reveal meaning</button>}</article>{revealed && <RatingButtons onRate={onRate} reinforcement={reinforcement} />}</section>
+    <section className="session-task-card"><div className="session-task-heading"><span className="eyebrow"><RotateCcw size={14} /> RETRIEVE</span><h1>What does this mean?</h1><p>Try to recall it before revealing the answer.</p></div><article className={`flashcard ${revealed ? "flipped" : ""}`}><AudioButton text={phrase.polish} compact /><h2 lang="pl">{phrase.polish}</h2><p className="phonetic large">{phrase.phonetic}</p>{revealed ? <div className="flashcard-answer"><span>{phrase.english}</span>{phrase.tip && <small>{phrase.tip}</small>}</div> : <button className="flashcard-reveal" onClick={() => setRevealed(true)}>Reveal meaning <kbd className="key-hint" aria-hidden="true">Space</kbd></button>}</article>{revealed && <RatingButtons onRate={onRate} reinforcement={reinforcement} />}</section>
   );
 }
 
 function ListeningTask({ phrase, onRate }) {
   const [answer, setAnswer] = useState(null);
+  useDrillKeys({ onSpace: () => { speakPolish(phrase.polish); return true; } });
   const options = useMemo(() => {
     const index = allPhrases.findIndex((item) => item.id === phrase.id);
     const distractors = [1, 7, 19].map((offset) => allPhrases[(index + offset) % allPhrases.length]).filter((item) => item.english !== phrase.english);
@@ -104,6 +111,10 @@ function BuilderTask({ phrase, onRate }) {
 
 function SpeakingTask({ phrase, onRate, reinforcement = false }) {
   const [attempted, setAttempted] = useState(false);
+  useDrillKeys({
+    onSpace: () => { speakPolish(phrase.polish); return true; },
+    onRate: (rating) => { if (!attempted) return false; onRate(rating); return true; },
+  });
   return <section className="session-task-card"><div className="session-task-heading"><span className="eyebrow"><Mic size={14} /> SPEAK</span><h1>Say it naturally, not perfectly</h1><p>Microphone checking is optional. Your self-rating records how this recall felt.</p></div><PronunciationCard phrase={phrase} extended onComplete={() => setAttempted(true)} /><button className="secondary-button self-rate-toggle" onClick={() => setAttempted(true)}>I said it aloud</button>{attempted && <RatingButtons onRate={onRate} reinforcement={reinforcement} />}</section>;
 }
 
@@ -116,6 +127,6 @@ function SessionComplete({ session, onExit, onRestart, upcomingDue }) {
   const minutes = results.reduce((sum, result) => sum + (result.minutes ?? 0), 0);
   const dialogue = results.find((result) => result.kind === "dialogue");
   return (
-    <section className="session-complete-view"><div className="session-complete-card panel"><div className="celebration">🎉</div><span className="eyebrow red">DAILY SESSION COMPLETE</span><h1 lang="pl">Świetna robota!</h1><p>You learned, retrieved, and used Polish in context. The next reviews are already scheduled.</p><div className="session-summary-grid"><div><strong>{accuracy}%</strong><span>recall accuracy</span></div><div><strong>+{xp}</strong><span>XP earned</span></div><div><strong>{minutes}</strong><span>minutes</span></div><div><strong>{dialogue?.mistakes ?? 0}</strong><span>dialogue retries</span></div></div><p className="upcoming-reviews"><Sparkles size={18} /> {upcomingDue} phrase{upcomingDue === 1 ? "" : "s"} currently due for your next review.</p><div className="session-complete-actions"><button className="secondary-button" onClick={onRestart}><RotateCcw size={17} /> Build another session</button><button className="primary-button" onClick={onExit}>Back to Today <ArrowRight size={17} /></button></div></div></section>
+    <section className="session-complete-view"><div className="session-complete-card poster"><div className="session-stamp" aria-hidden="true"><span>zrobione</span></div><span className="eyebrow light">DAILY SESSION COMPLETE</span><h1 lang="pl">Świetna robota!</h1><p>You learned, retrieved, and used Polish in context. The next reviews are already scheduled.</p><div className="session-summary-grid"><div><strong>{accuracy}%</strong><span>recall accuracy</span></div><div><strong>+{xp}</strong><span>XP earned</span></div><div><strong>{minutes}</strong><span>minutes</span></div><div><strong>{dialogue?.mistakes ?? 0}</strong><span>dialogue retries</span></div></div><p className="upcoming-reviews"><Sparkles size={18} /> {upcomingDue} phrase{upcomingDue === 1 ? "" : "s"} currently due for your next review.</p><div className="session-complete-actions"><button className="secondary-button" onClick={onRestart}><RotateCcw size={17} /> Build another session</button><button className="primary-button light-button" onClick={onExit}>Back to Today <ArrowRight size={17} /></button></div></div></section>
   );
 }

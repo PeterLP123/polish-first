@@ -1,8 +1,45 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronRight, Lightbulb, Mic, Volume2, X } from "lucide-react";
+import { AudioLines, ChevronRight, Lightbulb, Mic, Volume2, X } from "lucide-react";
 import { allPhrases, soundLessons } from "../data/course.js";
-import { speakPolish } from "../lib/speech.js";
+import { listPolishVoices, preferredPolishVoiceName, setPreferredPolishVoice, speakPolish } from "../lib/speech.js";
 import { AudioButton } from "./LearningControls.jsx";
+
+function VoicePicker() {
+  const [voices, setVoices] = useState(listPolishVoices);
+  const [choice, setChoice] = useState(() => preferredPolishVoiceName() ?? "");
+
+  useEffect(() => {
+    const engine = window.speechSynthesis;
+    if (!engine?.addEventListener) return undefined;
+    const refresh = () => setVoices(listPolishVoices());
+    engine.addEventListener("voiceschanged", refresh);
+    return () => engine.removeEventListener("voiceschanged", refresh);
+  }, []);
+
+  const select = (name) => {
+    setChoice(name);
+    setPreferredPolishVoice(name || null);
+    speakPolish("Dzień dobry! Miło mi.");
+  };
+
+  if (!window.speechSynthesis) return null;
+
+  return (
+    <section className="voice-bar panel" aria-label="Polish audio voice">
+      <span className="voice-bar-icon" aria-hidden="true"><AudioLines size={20} /></span>
+      <div className="voice-bar-copy"><strong>Polish audio voice</strong><span>{voices.length ? "Choosing a voice plays a short sample. Voices come from this device and browser." : "This browser has no Polish voice installed, so audio uses its closest default."}</span></div>
+      {voices.length > 0 && (
+        <label className="practice-filter voice-bar-select">
+          <span className="sr-only">Choose a Polish voice</span>
+          <select value={choice} onChange={(event) => select(event.target.value)}>
+            <option value="">Automatic (best available)</option>
+            {voices.map((voice) => <option key={voice.name} value={voice.name}>{voice.name}{voice.localService ? " · on-device" : ""}</option>)}
+          </select>
+        </label>
+      )}
+    </section>
+  );
+}
 
 export default function SoundsView({ award }) {
   const [selected, setSelected] = useState(soundLessons[0]);
@@ -45,6 +82,7 @@ export default function SoundsView({ award }) {
   return (
     <div className="view-stack sounds-page">
       <header className="page-header"><div><span className="eyebrow red"><Mic size={15} /> POLISH SOUND LAB</span><h1>Make Polish feel speakable</h1><p>The spelling is consistent once you know the code. Choose a sound, hear it in context, and repeat.</p></div><div className="sound-wave" aria-hidden="true">{[1,2,3,4,5,6,7].map((n) => <i key={n} />)}</div></header>
+      <VoicePicker />
       <button ref={pickerTriggerRef} className="mobile-picker-trigger panel" onClick={() => setPickerOpen(true)} aria-haspopup="dialog" aria-expanded={pickerOpen}><span><small>SELECTED SOUND</small><strong>{selected.sound} · {selected.like}</strong></span><span>Change <ChevronRight size={17} /></span></button>
       <div className="sound-layout">
         {pickerOpen && <button className="sheet-scrim sound-picker-scrim" onClick={() => closePicker(true)} aria-label="Close sound picker" />}

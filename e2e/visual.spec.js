@@ -12,11 +12,16 @@ async function settlePage(page) {
     }
   ` });
   await page.evaluate(async () => {
+    // The sample text includes Polish diacritics so the latin-ext subsets load
+    // now instead of reflowing the page after the screenshot baseline settles.
+    const sample = "Cześć! Dzień dobry ąęśćżźółń AaBb123";
     await Promise.all([
-      document.fonts.load('400 16px "DM Sans"'),
-      document.fonts.load('700 16px "DM Sans"'),
-      document.fonts.load('600 42px "Manrope"'),
-      document.fonts.load('800 42px "Manrope"'),
+      document.fonts.load('400 16px "Instrument Sans"', sample),
+      document.fonts.load('600 16px "Instrument Sans"', sample),
+      document.fonts.load('700 16px "Instrument Sans"', sample),
+      document.fonts.load('600 42px "Bricolage Grotesque"', sample),
+      document.fonts.load('700 42px "Bricolage Grotesque"', sample),
+      document.fonts.load('800 42px "Bricolage Grotesque"', sample),
     ]);
     await document.fonts.ready;
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -36,6 +41,17 @@ test("keeps every primary view and learning shell visually stable", async ({ pag
   const mobile = testInfo.project.name === "webkit-mobile";
   await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 });
   await page.clock.install({ time: FIXED_TIME });
+  // Speech voices arrive asynchronously and differ per machine; pin them empty
+  // so the sounds view's voice bar renders one deterministic state.
+  await page.addInitScript(() => {
+    try {
+      if (window.SpeechSynthesis?.prototype) {
+        Object.defineProperty(window.SpeechSynthesis.prototype, "getVoices", { value: () => [], configurable: true });
+      } else if (window.speechSynthesis) {
+        window.speechSynthesis.getVoices = () => [];
+      }
+    } catch { /* leave real voices in place */ }
+  });
 
   for (const view of PRIMARY_VIEWS) {
     await resetAt(page, view);

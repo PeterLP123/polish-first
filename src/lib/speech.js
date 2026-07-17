@@ -1,9 +1,11 @@
 const POLISH_LANGUAGE = "pl-PL";
 const LISTENING_TIMEOUT_MS = 12_000;
+const VOICE_PREFERENCE_KEY = "czesc-polish-voice";
 
 let cachedPolishVoice = null;
 let activeUtterance = null;
 let cancelActiveUtterance = null;
+let sessionVoicePreference = null;
 
 function synthesis() {
   return typeof window !== "undefined" ? window.speechSynthesis : null;
@@ -17,11 +19,36 @@ function voiceScore(voice) {
   return score;
 }
 
-function refreshPolishVoice() {
+export function listPolishVoices() {
   const voices = synthesis()?.getVoices?.() ?? [];
-  cachedPolishVoice = voices
+  return voices
     .filter((voice) => String(voice.lang ?? "").toLowerCase().startsWith("pl"))
-    .sort((left, right) => voiceScore(right) - voiceScore(left) || String(left.name).localeCompare(String(right.name), "pl"))[0] ?? null;
+    .sort((left, right) => voiceScore(right) - voiceScore(left) || String(left.name).localeCompare(String(right.name), "pl"));
+}
+
+export function preferredPolishVoiceName() {
+  try {
+    return window.localStorage?.getItem(VOICE_PREFERENCE_KEY) ?? sessionVoicePreference;
+  } catch {
+    return sessionVoicePreference;
+  }
+}
+
+export function setPreferredPolishVoice(name) {
+  sessionVoicePreference = name || null;
+  try {
+    if (name) window.localStorage?.setItem(VOICE_PREFERENCE_KEY, name);
+    else window.localStorage?.removeItem(VOICE_PREFERENCE_KEY);
+  } catch {
+    // Storage unavailable; the session-level preference above still applies.
+  }
+  refreshPolishVoice();
+}
+
+function refreshPolishVoice() {
+  const polishVoices = listPolishVoices();
+  const preferred = preferredPolishVoiceName();
+  cachedPolishVoice = (preferred && polishVoices.find((voice) => voice.name === preferred)) || polishVoices[0] || null;
   return cachedPolishVoice;
 }
 

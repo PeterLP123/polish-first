@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen, Brain, Check, FilePenLine, Headphones, Languages, Lightbulb, Mic, RotateCcw, Trophy, Volume2, X } from "lucide-react";
 import { allPhrases, clozeItems, courseTopics, readings, units, writingItems } from "../data/course.js";
 import { buildReviewDeck, scoreCloze, scoreForRating, scoreReading, scoreWriting, shuffled, similarity } from "../lib/learning.js";
+import { useDrillKeys } from "../lib/drill-keys.js";
 import { speakPolish } from "../lib/speech.js";
 import { AudioButton, PronunciationCard } from "./LearningControls.jsx";
 
@@ -72,7 +73,7 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
 }
 
 function RatingButtons({ onRate }) {
-  return <div className="srs-rating-row" aria-label="Schedule this phrase">{RATINGS.map((rating) => <button key={rating.id} className={`rating-${rating.id}`} onClick={() => onRate(rating.id)}><strong>{rating.label}</strong><small>{rating.hint}</small></button>)}</div>;
+  return <div className="srs-rating-row" aria-label="Schedule this phrase">{RATINGS.map((rating, index) => <button key={rating.id} className={`rating-${rating.id}`} onClick={() => onRate(rating.id)}><strong>{rating.label}</strong><small>{rating.hint}</small><kbd className="key-hint" aria-hidden="true">{index + 1}</kbd></button>)}</div>;
 }
 
 function Flashcards({ progress, award, onAttempt, pool }) {
@@ -93,6 +94,11 @@ function Flashcards({ progress, award, onAttempt, pool }) {
     setFlipped(false);
   };
 
+  useDrillKeys({
+    onSpace: () => { if (flipped) speakPolish(phrase.polish); else setFlipped(true); return true; },
+    onRate: (rating) => { if (!flipped) return false; rate(rating); return true; },
+  });
+
   return (
     <section className="practice-stage">
       <div className="practice-topline"><span>Card {(index % deck.length) + 1} of {deck.length}</span><div className="mini-progress"><span style={{ width: `${(((index % deck.length) + 1) / deck.length) * 100}%` }} /></div><span>Polish → English</span></div>
@@ -101,7 +107,7 @@ function Flashcards({ progress, award, onAttempt, pool }) {
         <AudioButton text={phrase.polish} compact />
         <h2 lang="pl">{phrase.polish}</h2>
         <p className="phonetic large">{phrase.phonetic}</p>
-        {flipped ? <div className="flashcard-answer"><span>{phrase.english}</span>{phrase.tip && <small>{phrase.tip}</small>}</div> : <button className="flashcard-reveal" onClick={() => setFlipped(true)}>Reveal meaning</button>}
+        {flipped ? <div className="flashcard-answer"><span>{phrase.english}</span>{phrase.tip && <small>{phrase.tip}</small>}</div> : <button className="flashcard-reveal" onClick={() => setFlipped(true)}>Reveal meaning <kbd className="key-hint" aria-hidden="true">Space</kbd></button>}
       </article>
       {flipped && <RatingButtons onRate={rate} />}
     </section>
@@ -117,6 +123,7 @@ function ListeningQuiz({ award, onAttempt, pool }) {
     award({ xp: correct ? 8 : 1, minutes: correct ? 1 : 0, phraseId: round.phrase.id, review: true, rating: correct ? "good" : "again" }, correct ? "+8 XP · Review scheduled" : "+1 XP · Back later today");
     onAttempt(round.phrase.id, "listening", "listen", correct ? 1 : 0);
   };
+  useDrillKeys({ onSpace: () => { speakPolish(round.phrase.polish); return true; } });
   const next = () => { setRound(makeListeningRound(pool, round.phrase.id)); setAnswer(null); };
   const correct = answer === round.phrase.id;
 
@@ -194,6 +201,10 @@ function SpeakPractice({ progress, award, onAttempt, pool }) {
     setIndex((current) => current + 1);
     setAttempted(false);
   };
+  useDrillKeys({
+    onSpace: () => { speakPolish(phrase.polish); return true; },
+    onRate: (rating) => { if (!attempted) return false; rate(rating); return true; },
+  });
   return (
     <section className="practice-stage">
       <div className="practice-topline"><span>Phrase {(index % deck.length) + 1} of {deck.length}</span><div className="mini-progress"><span style={{ width: `${(((index % deck.length) + 1) / deck.length) * 100}%` }} /></div><span>Listen, then speak</span></div>
