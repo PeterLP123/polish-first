@@ -85,7 +85,6 @@ function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal, onStartS
         <article className="continue-card">
           <div className="continue-copy">
             <span className="eyebrow light">TODAY'S GUIDED SESSION</span>
-            <div className="unit-emoji" aria-hidden="true">🧠</div>
             <h2>{todaySession?.completedAt ? "Today's plan is complete" : resumableSession ? "Pick up where you left off" : "Learn, remember, then use it"}</h2>
             <p>A finite plan built from what is due and what comes next. Speaking is always optional.</p>
             <div className="lesson-meta"><span><Headphones size={16} /> {reviewCount} recall steps</span><span>·</span><span>{newCount} new</span><span>·</span><span>1 dialogue</span></div>
@@ -96,7 +95,7 @@ function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal, onStartS
           <div className="continue-visual" aria-hidden="true">
             <div className="speech-orbit orbit-one">Cześć!</div>
             <div className="speech-orbit orbit-two">Dzień dobry</div>
-            <div className="mascot"><span>ę</span></div>
+            <div className="poster-letter">ę</div>
           </div>
         </article>
 
