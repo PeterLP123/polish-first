@@ -10,6 +10,17 @@
     <meta name="apple-mobile-web-app-title" content="Cześć!" />
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <link rel="icon" href="%BASE_URL%icon.svg" type="image/svg+xml" />
+    <script>
+      // Apply the saved theme before first paint to avoid a light flash.
+      (function () {
+        try {
+          var saved = localStorage.getItem("czesc-theme");
+          var theme = saved === "dark" || saved === "light" ? saved : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.dataset.theme = theme;
+          if (theme === "dark") document.querySelector('meta[name="theme-color"]').setAttribute("content", "#15120e");
+        } catch (error) { /* default to light */ }
+      })();
+    </script>
     <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
     <title>Cześć! — Polish for real life</title>
   </head>

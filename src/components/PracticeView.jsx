@@ -5,6 +5,7 @@ import { buildReviewDeck, scoreCloze, scoreForRating, scoreReading, scoreWriting
 import { useDrillKeys } from "../lib/drill-keys.js";
 import { speakPolish } from "../lib/speech.js";
 import { AudioButton, PronunciationCard } from "./LearningControls.jsx";
+import DiacriticsBar from "./DiacriticsBar.jsx";
 
 const RATINGS = [
   { id: "again", label: "Again", hint: "Today" },
@@ -235,6 +236,7 @@ function WritingPractice({ items, award, onAttempt }) {
   const [index, setIndex] = useState(0);
   const [value, setValue] = useState("");
   const [result, setResult] = useState(null);
+  const inputRef = useRef(null);
   const item = items[index % items.length];
   const submit = () => {
     const score = scoreWriting(item, value);
@@ -243,13 +245,14 @@ function WritingPractice({ items, award, onAttempt }) {
     onAttempt(item.id, "writing", "writing", score);
   };
   const next = () => { setIndex((value) => value + 1); setValue(""); setResult(null); };
-  return <section className="practice-stage text-practice"><span className="eyebrow">CONTROLLED WRITING</span><h2>{item.prompt}</h2><label>Your Polish<textarea rows="5" lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={value} disabled={result !== null} onChange={(event) => setValue(event.target.value)} placeholder="Write or use your phone keyboard's microphone" /></label>{result === null ? <button className="primary-button" disabled={!value.trim()} onClick={submit}>Check response</button> : <div className={`builder-feedback ${result ? "correct" : "wrong"}`} role="status"><strong>{result ? "Required meaning included." : "Use the model and compare the meaning."}</strong><span>Model: <span lang="pl">{item.acceptedAnswers[0]}</span></span><button className="primary-button" onClick={next}>Next prompt</button></div>}</section>;
+  return <section className="practice-stage text-practice"><span className="eyebrow">CONTROLLED WRITING</span><h2>{item.prompt}</h2><label>Your Polish<textarea ref={inputRef} rows="5" lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={value} disabled={result !== null} onChange={(event) => setValue(event.target.value)} placeholder="Write or use your phone keyboard's microphone" /></label><DiacriticsBar inputRef={inputRef} value={value} onChange={setValue} disabled={result !== null} />{result === null ? <button className="primary-button" disabled={!value.trim()} onClick={submit}>Check response</button> : <div className={`builder-feedback ${result ? "correct" : "wrong"}`} role="status"><strong>{result ? "Required meaning included." : "Use the model and compare the meaning."}</strong><span>Model: <span lang="pl">{item.acceptedAnswers[0]}</span></span><button className="primary-button" onClick={next}>Next prompt</button></div>}</section>;
 }
 
 function GrammarPractice({ items, award, onAttempt }) {
   const [index, setIndex] = useState(0);
   const [value, setValue] = useState("");
   const [result, setResult] = useState(null);
+  const inputRef = useRef(null);
   const item = items[index % items.length];
   const submit = () => {
     const score = scoreCloze(item, value);
@@ -258,5 +261,5 @@ function GrammarPractice({ items, award, onAttempt }) {
     onAttempt(item.id, "grammar", "grammar", score);
   };
   const next = () => { setIndex((value) => value + 1); setValue(""); setResult(null); };
-  return <section className="practice-stage text-practice"><span className="eyebrow">COMPLETE THE GAP</span><h2>{item.prompt}</h2><label>Missing Polish<input lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={value} disabled={result !== null} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && value.trim() && result === null) { event.preventDefault(); submit(); } }} placeholder="Type or dictate the missing Polish" /></label>{result === null ? <button className="primary-button" disabled={!value.trim()} onClick={submit}>Check answer</button> : <div className={`builder-feedback ${result ? "correct" : "wrong"}`} role="status"><strong>{result ? "Correct." : <>Accepted answer: <span lang="pl">{item.acceptedAnswers[0]}</span></>}</strong><button className="primary-button" onClick={next}>Next grammar item</button></div>}</section>;
+  return <section className="practice-stage text-practice"><span className="eyebrow">COMPLETE THE GAP</span><h2>{item.prompt}</h2><label>Missing Polish<input ref={inputRef} lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={value} disabled={result !== null} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && value.trim() && result === null) { event.preventDefault(); submit(); } }} placeholder="Type or dictate the missing Polish" /></label><DiacriticsBar inputRef={inputRef} value={value} onChange={setValue} disabled={result !== null} />{result === null ? <button className="primary-button" disabled={!value.trim()} onClick={submit}>Check answer</button> : <div className={`builder-feedback ${result ? "correct" : "wrong"}`} role="status"><strong>{result ? "Correct." : <>Accepted answer: <span lang="pl">{item.acceptedAnswers[0]}</span></>}</strong><button className="primary-button" onClick={next}>Next grammar item</button></div>}</section>;
 }

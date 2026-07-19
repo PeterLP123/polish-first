@@ -24,6 +24,9 @@ The current production version is available at [https://peterlp123.github.io/pol
 - Finite daily sessions that mix new phrases, due reviews, and a real-life dialogue
 - Due-date spaced repetition with Again, Hard, Good, and Easy ratings
 - Twenty-four Polish sound lessons and sixty-six grammar explainers spanning beginner foundations through a B2 bridge
+- A "Hear the difference" minimal-pair listening drill for the classic hard/soft sound traps (sz/ś, cz/ć, ż/ź and more)
+- On-screen Polish letter buttons (ą ć ę ł ń ó ś ź ż) on every typing task, for keyboards without a Polish layout
+- A dark "night gallery" theme with a persisted preference, plus a reload prompt when a new version is ready offline
 - Thirty-six practical readings and thirty-six controlled-writing tasks, including extended texts, proposals, formal correspondence, reflective narratives, evidence evaluation, and argument-building
 - Ten stage checks covering listening, reading, grammar, recall, writing, dialogue, and speaking
 - XP, streaks, an adjustable daily goal, weekly activity, phrase mastery, and dialogue records saved in `localStorage`

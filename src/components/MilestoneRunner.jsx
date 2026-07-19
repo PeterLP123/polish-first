@@ -3,6 +3,8 @@ import { ArrowRight, Check, Volume2, X } from "lucide-react";
 import { ContentCatalog, allPhrases } from "../data/course.js";
 import { normalisePolish, scoreCloze, scoreForRating, scoreReading, scoreWriting, shuffled } from "../lib/learning.js";
 import { speakPolish } from "../lib/speech.js";
+import AppIcon from "./AppIcon.jsx";
+import DiacriticsBar from "./DiacriticsBar.jsx";
 
 const SKILLS = { listening: "listening", reading: "reading", grammar: "grammar", builder: "recall", writing: "writing", dialogue: "recall", speaking: "speaking" };
 
@@ -59,7 +61,7 @@ export default function MilestoneRunner({ milestone, onClose, onComplete, onAtte
     {!finished ? <>
       <div className="practice-topline"><span>Task {taskIndex + 1} of 10</span><div className="mini-progress"><span style={{ width: `${(taskIndex / 10) * 100}%` }} /></div><span>{task.kind}</span></div>
       <MilestoneTask key={`${milestone.id}-${taskIndex}`} task={task} item={item} onComplete={completeTask} />
-    </> : <div className="milestone-result"><span className="celebration">{finished.passed ? "🎉" : "🌱"}</span><h2 tabIndex="-1">{finished.passed ? "Scenario ready" : "Keep building"}</h2><p>Your automatic score was <strong>{Math.round(finished.mean * 100)}%</strong>. Passing requires 80% plus the speaking self-check.</p><div><button className="secondary-button" onClick={retry}>Try again</button><button className="primary-button" onClick={onClose}>Back to insights</button></div></div>}
+    </> : <div className="milestone-result"><span className="celebration"><AppIcon icon={finished.passed ? "🎉" : "🌱"} /></span><h2 tabIndex="-1">{finished.passed ? "Scenario ready" : "Keep building"}</h2><p>Your automatic score was <strong>{Math.round(finished.mean * 100)}%</strong>. Passing requires 80% plus the speaking self-check.</p><div><button className="secondary-button" onClick={retry}>Try again</button><button className="primary-button" onClick={onClose}>Back to insights</button></div></div>}
   </section>;
 }
 
@@ -88,10 +90,11 @@ function ReadingTask({ item, onComplete }) {
 function TextTask({ title, prompt, accepted, scorer, onComplete, multiline = false }) {
   const [value, setValue] = useState("");
   const [checked, setChecked] = useState(null);
+  const inputRef = useRef(null);
   const score = scorer(value);
-  const polishInputProps = { lang: "pl", inputMode: "text", enterKeyHint: "done", autoComplete: "off", autoCapitalize: "sentences", autoCorrect: "on", spellCheck: true };
+  const polishInputProps = { ref: inputRef, lang: "pl", inputMode: "text", enterKeyHint: "done", autoComplete: "off", autoCapitalize: "sentences", autoCorrect: "on", spellCheck: true };
   const input = multiline ? <textarea {...polishInputProps} rows="4" value={value} disabled={checked !== null} onChange={(event) => setValue(event.target.value)} placeholder="Write or use your phone keyboard's microphone" /> : <input {...polishInputProps} value={value} disabled={checked !== null} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && value.trim()) { event.preventDefault(); setChecked(score); } }} placeholder="Type or dictate your Polish answer" />;
-  return <div className="milestone-task text-practice"><h2 tabIndex="-1">{title}</h2><p>{prompt}</p><label>Your answer{input}</label>{checked !== null && <div className={`builder-feedback ${checked ? "correct" : "wrong"}`} role="status"><strong>{checked ? "Correct." : `Model: ${accepted[0]}`}</strong></div>}{checked === null ? <button className="primary-button" disabled={!value.trim()} onClick={() => setChecked(score)}>Check answer</button> : <button className="primary-button" onClick={() => onComplete(checked)}>Continue <ArrowRight size={17} /></button>}</div>;
+  return <div className="milestone-task text-practice"><h2 tabIndex="-1">{title}</h2><p>{prompt}</p><label>Your answer{input}</label><DiacriticsBar inputRef={inputRef} value={value} onChange={setValue} disabled={checked !== null} />{checked !== null && <div className={`builder-feedback ${checked ? "correct" : "wrong"}`} role="status"><strong>{checked ? "Correct." : `Model: ${accepted[0]}`}</strong></div>}{checked === null ? <button className="primary-button" disabled={!value.trim()} onClick={() => setChecked(score)}>Check answer</button> : <button className="primary-button" onClick={() => onComplete(checked)}>Continue <ArrowRight size={17} /></button>}</div>;
 }
 
 function DialogueTask({ item, onComplete }) {

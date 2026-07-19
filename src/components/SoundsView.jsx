@@ -1,8 +1,102 @@
 import { useEffect, useRef, useState } from "react";
-import { AudioLines, ChevronRight, Lightbulb, Mic, Volume2, X } from "lucide-react";
+import { AudioLines, Check, ChevronRight, Ear, Lightbulb, Mic, Play, RotateCcw, Volume2, X } from "lucide-react";
 import { allPhrases, soundLessons } from "../data/course.js";
 import { listPolishVoices, preferredPolishVoiceName, setPreferredPolishVoice, speakPolish } from "../lib/speech.js";
+import AppIcon from "./AppIcon.jsx";
 import { AudioButton } from "./LearningControls.jsx";
+
+// Classic hard/soft traps, one spoken word per round. Words chosen to be common
+// and unambiguous for speech synthesis; the gloss is revealed after answering.
+const MINIMAL_PAIRS = [
+  { a: { sound: "CZ", word: "czas", english: "time" }, b: { sound: "Ć", word: "ćma", english: "moth" } },
+  { a: { sound: "SZ", word: "sześć", english: "six" }, b: { sound: "Ś", word: "sieć", english: "net" } },
+  { a: { sound: "Ż", word: "żona", english: "wife" }, b: { sound: "Ź", word: "zima", english: "winter" } },
+  { a: { sound: "DZ", word: "dzwon", english: "bell" }, b: { sound: "DŻ", word: "dżem", english: "jam" } },
+  { a: { sound: "Ł", word: "łza", english: "a tear" }, b: { sound: "W", word: "wiza", english: "visa" } },
+];
+
+function buildPairsDeck() {
+  return MINIMAL_PAIRS.map((pair) => ({ pair, side: Math.random() < 0.5 ? "a" : "b" })).sort(() => Math.random() - 0.5);
+}
+
+function MinimalPairsDrill({ award }) {
+  const [deck, setDeck] = useState(null);
+  const [round, setRound] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+  const item = deck?.[round];
+  const played = item ? item.pair[item.side] : null;
+  const isLastRound = deck ? round === deck.length - 1 : false;
+
+  const start = () => {
+    const nextDeck = buildPairsDeck();
+    setDeck(nextDeck);
+    setRound(0);
+    setPicked(null);
+    setScore(0);
+    setDone(false);
+    speakPolish(nextDeck[0].pair[nextDeck[0].side].word, 0.72);
+  };
+
+  const choose = (side) => {
+    if (picked) return;
+    setPicked(side);
+    if (side === item.side) setScore((current) => current + 1);
+  };
+
+  const next = () => {
+    if (isLastRound) {
+      const finalScore = score;
+      setDone(true);
+      award({ xp: 4 + finalScore * 2, minutes: 2 }, `Listening drill · ${finalScore} of ${deck.length} right`);
+      return;
+    }
+    const nextRound = round + 1;
+    setRound(nextRound);
+    setPicked(null);
+    const nextItem = deck[nextRound];
+    speakPolish(nextItem.pair[nextItem.side].word, 0.72);
+  };
+
+  return (
+    <section className="pairs-drill panel" aria-label="Minimal pairs listening drill">
+      <div className="pairs-drill-copy">
+        <span className="eyebrow red"><Ear size={14} /> LISTENING DRILL</span>
+        <h2>Hear the difference</h2>
+        <p>Five quick rounds, straight from the trickiest corners of the sound code. Hear a word, then tap the sound it starts with.</p>
+      </div>
+      {!deck && <button className="primary-button pairs-start" onClick={start}><Play size={18} fill="currentColor" /> Start the drill</button>}
+      {deck && !done && item && (
+        <div className="pairs-round">
+          <div className="practice-topline"><span>Round {round + 1} of {deck.length}</span><div className="mini-progress"><span style={{ width: `${(round / deck.length) * 100}%` }} /></div><span>{score} right</span></div>
+          <button className="big-listen pairs-listen" onClick={() => speakPolish(played.word, 0.72)}><span><Volume2 size={22} /></span>{picked ? "Hear it again" : "Play the word"}</button>
+          <div className="answer-grid pairs-options">
+            {["a", "b"].map((side) => {
+              const option = item.pair[side];
+              const state = !picked ? "" : side === item.side ? "correct" : side === picked ? "wrong" : "muted";
+              return <button key={side} className={state} disabled={Boolean(picked)} onClick={() => choose(side)}><span><strong className="pairs-sound">{option.sound}</strong></span></button>;
+            })}
+          </div>
+          {picked && (
+            <div className={`quiz-feedback ${picked === item.side ? "correct" : "wrong"}`} role="status">
+              <span className="feedback-icon">{picked === item.side ? <Check size={19} /> : <X size={19} />}</span>
+              <div><strong lang="pl">{played.word}</strong> — {played.english}<p>Starts with <strong>{played.sound}</strong>. The other word was {item.pair[item.side === "a" ? "b" : "a"].word}.</p></div>
+              <button className="primary-button" onClick={next}>{isLastRound ? "Finish" : "Next"}</button>
+            </div>
+          )}
+        </div>
+      )}
+      {done && (
+        <div className="pairs-result" role="status">
+          <strong>{score}<small>/ {deck.length}</small></strong>
+          <p>{score === deck.length ? "Perfect ears. The hard/soft line is yours." : score >= deck.length - 2 ? "Close. Replay the sounds above and try again." : "Those pairs are genuinely hard. Pick the sounds above, listen, then retry."}</p>
+          <button className="secondary-button" onClick={start}><RotateCcw size={17} /> Play again</button>
+        </div>
+      )}
+    </section>
+  );
+}
 
 function VoicePicker() {
   const [voices, setVoices] = useState(listPolishVoices);
@@ -95,7 +189,7 @@ export default function SoundsView({ award }) {
           <div className="example-sounds">
             {selected.examples.map((example) => <button key={example} onClick={() => speakPolish(example, 0.7)}><Volume2 size={17} /><strong lang="pl">{example}</strong></button>)}
           </div>
-          <div className="mouth-tip"><span>👄</span><div><strong>Mouth cue</strong><p>{selected.tip}</p></div></div>
+          <div className="mouth-tip"><span><AppIcon icon="👄" /></span><div><strong>Mouth cue</strong><p>{selected.tip}</p></div></div>
           <div className="section-heading-row compact"><div><span className="eyebrow">TRY IT IN A PHRASE</span><h2>Hear the sound doing real work</h2></div></div>
           <div className="sound-phrases">
             {fallback.map((phrase) => <article key={phrase.id}><AudioButton text={phrase.polish} compact /><div><strong lang="pl">{phrase.polish}</strong><span className="phonetic">{phrase.phonetic}</span><small>{phrase.english}</small></div><button className="tiny-mic" onClick={() => award({ xp: 3, phraseId: phrase.id }, "+3 XP · Spoken aloud")} aria-label={`Mark ${phrase.polish} as spoken`}><Mic size={16} /></button></article>)}
@@ -103,6 +197,7 @@ export default function SoundsView({ award }) {
           <div className="sound-note"><Lightbulb size={18} /><p><strong>A useful approximation, not a replacement for listening.</strong> English respellings get you confidently close. Polish audio trains the details your ears need.</p></div>
         </section>
       </div>
+      <MinimalPairsDrill award={award} />
     </div>
   );
 }

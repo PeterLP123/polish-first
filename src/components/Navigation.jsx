@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Award, BookOpen, Brain, Check, ChevronRight, Ellipsis, Flame, GraduationCap, Home, MessageCircle, Mic, Zap } from "lucide-react";
+import { Award, BookOpen, Brain, Check, ChevronRight, Ellipsis, Flame, GraduationCap, Home, MessageCircle, Mic, Moon, Sun, Zap } from "lucide-react";
 import { effectiveStreak, weekActivity } from "../lib/learning.js";
 
 export const NAV_ITEMS = [
@@ -25,7 +25,16 @@ function StreakCard({ progress, compact = false }) {
   );
 }
 
-export function Sidebar({ view, progress, dueCount = 0, onNavigate }) {
+function ThemeToggle({ theme, onToggle, className = "theme-toggle" }) {
+  const dark = theme === "dark";
+  return (
+    <button type="button" className={className} onClick={onToggle} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} title={dark ? "Switch to light mode" : "Switch to dark mode"}>
+      {dark ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+  );
+}
+
+export function Sidebar({ view, progress, dueCount = 0, onNavigate, theme, onToggleTheme }) {
   return (
     <aside className="sidebar" aria-label="Learning navigation">
       <div className="sidebar-topline"><button className="brand" onClick={() => onNavigate("home")}><span className="brand-mark">Cz</span><span><strong>Cześć!</strong><small>Polish for real life</small></span></button></div>
@@ -38,13 +47,24 @@ export function Sidebar({ view, progress, dueCount = 0, onNavigate }) {
         ))}
       </nav>
       <StreakCard progress={progress} />
-      <p className="sidebar-footnote">Mów od pierwszego dnia.<br />Speak from day one.</p>
+      <div className="sidebar-footer">
+        <p className="sidebar-footnote">Mów od pierwszego dnia.<br />Speak from day one.</p>
+        {onToggleTheme && <ThemeToggle theme={theme} onToggle={onToggleTheme} />}
+      </div>
     </aside>
   );
 }
 
-export function MobileHeader({ label, xp }) {
-  return <header className="mobile-header"><div className="mobile-brand"><span>Cz</span><strong>{label}</strong></div><span className="mobile-xp"><Zap size={16} /> {xp}</span></header>;
+export function MobileHeader({ label, xp, theme, onToggleTheme }) {
+  return (
+    <header className="mobile-header">
+      <div className="mobile-brand"><span>Cz</span><strong>{label}</strong></div>
+      <div className="mobile-header-actions">
+        <span className="mobile-xp"><Zap size={16} /> {xp}</span>
+        {onToggleTheme && <ThemeToggle theme={theme} onToggle={onToggleTheme} className="theme-toggle mobile-theme-toggle" />}
+      </div>
+    </header>
+  );
 }
 
 export function BottomNav({ view, dueCount = 0, progress, onNavigate }) {

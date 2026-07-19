@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { CircleHelp, Gauge, Keyboard, Lightbulb, Mic, Pause, Volume2 } from "lucide-react";
 import { similarity } from "../lib/learning.js";
 import { listenForPolish, speakPolish, speechRecognitionMessage, stopPolishSpeech } from "../lib/speech.js";
+import DiacriticsBar from "./DiacriticsBar.jsx";
 
 export function AudioButton({ text, label = "Hear Polish", compact = false, rate = 0.82 }) {
   const [playing, setPlaying] = useState(false);
@@ -42,6 +43,7 @@ export function PronunciationCard({ phrase, onComplete, extended = false }) {
   const [dictationOpen, setDictationOpen] = useState(false);
   const [dictation, setDictation] = useState("");
   const recognitionRef = useRef(null);
+  const dictationRef = useRef(null);
 
   useEffect(() => {
     recognitionRef.current?.abort?.();
@@ -123,8 +125,9 @@ export function PronunciationCard({ phrase, onComplete, extended = false }) {
       {listening && <p className="listening-status" role="status"><span aria-hidden="true" /> Listening for Polish… tap again to stop.</p>}
       {dictationOpen && <form className="dictation-input" onSubmit={checkDictation}>
         <label>What did your phone hear?
-          <input lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={dictation} onChange={(event) => setDictation(event.target.value)} placeholder="Speak or type in Polish" />
+          <input ref={dictationRef} lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={dictation} onChange={(event) => setDictation(event.target.value)} placeholder="Speak or type in Polish" />
         </label>
+        <DiacriticsBar inputRef={dictationRef} value={dictation} onChange={setDictation} />
         <p>On iPhone, tap the microphone on the Polish keyboard, then check the transcript.</p>
         <button className="secondary-button" type="submit" disabled={!dictation.trim()}>Check transcript</button>
       </form>}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowRight, Check, ChevronRight, GraduationCap, Headphones, Play, Search } from "lucide-react";
 import { allPhrases, courseTopics, units } from "../data/course.js";
+import AppIcon from "./AppIcon.jsx";
 import ProgressRing from "./ProgressRing.jsx";
 
 function UnitCard({ unit, progress, onOpenUnit, highlight = false }) {
@@ -12,7 +13,7 @@ function UnitCard({ unit, progress, onOpenUnit, highlight = false }) {
     <article className={`unit-card ${done ? "completed" : ""} ${highlight ? "frontier-highlight" : ""}`} id={`unit-card-${unit.id}`}>
       <div className="unit-card-top">
         <span className="unit-index">{done ? <Check size={18} /> : String(unit.number).padStart(2, "0")}</span>
-        <span className="unit-art">{unit.icon}</span>
+        <span className="unit-art"><AppIcon icon={unit.icon} /></span>
         {done && <span className="complete-label">Complete</span>}
       </div>
       <div className="unit-tags"><small>{unit.topic}</small><span>{unit.stage}</span></div>
@@ -72,7 +73,7 @@ export default function CourseView({ progress, onOpenUnit }) {
         <ProgressRing value={(progress.completedUnits.length / units.length) * 100}><strong>{progress.completedUnits.length}</strong><span>of {units.length}</span></ProgressRing>
       </header>
       <section className="course-continue panel" aria-label="Continue learning">
-        <div className="course-continue-icon" aria-hidden="true">{nextUnit.icon}</div>
+        <div className="course-continue-icon" aria-hidden="true"><AppIcon icon={nextUnit.icon} /></div>
         <div><span className="eyebrow">UP NEXT · {nextUnit.stage}</span><h2>{nextUnit.title}</h2><p>{nextUnit.phrases.length} phrases · {nextUnit.time} min</p></div>
         <button className="primary-button" onClick={() => onOpenUnit(nextUnit)}>{progress.learnedPhrases.some((id) => id.startsWith(`${nextUnit.id}-`)) ? "Continue unit" : "Start unit"}<ArrowRight size={17} /></button>
       </section>

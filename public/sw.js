@@ -1,5 +1,7 @@
 const CACHE_PREFIX = "polish-first-";
-const CACHE_NAME = `${CACHE_PREFIX}v8`;
+// Bump this version on every deploy: the byte change updates the worker, and
+// the app listens for "controllerchange" to offer learners a reload prompt.
+const CACHE_NAME = `${CACHE_PREFIX}v9`;
 const APP_SHELL = ["./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
 
 async function cacheAppShell() {

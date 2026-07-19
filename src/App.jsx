@@ -22,7 +22,9 @@ import { allPhrases, units } from "./data/course.js";
 import { addStudy, buildDailySession, currentSession, effectiveStreak, getDuePhrases, loadProgressResult, localDate, masterySummary, recordAttempt, recordDialogue, recordMilestoneResult, saveProgress, scoreForRating, todayMinutes } from "./lib/learning.js";
 import { viewFromHash } from "./lib/navigation.js";
 import { listenForPolish, speakPolish, speechRecognitionMessage } from "./lib/speech.js";
+import { applyTheme, getInitialTheme } from "./lib/theme.js";
 import { AudioButton, PronunciationCard } from "./components/LearningControls.jsx";
+import AppIcon from "./components/AppIcon.jsx";
 import { BottomNav, MobileHeader, NAV_ITEMS, Sidebar } from "./components/Navigation.jsx";
 import ProgressRing from "./components/ProgressRing.jsx";
 
@@ -147,7 +149,7 @@ function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal, onStartS
           return (
             <button key={unit.id} className={`snapshot-card ${done ? "done" : ""}`} onClick={() => onOpenUnit(unit)}>
               <span className="snapshot-number">{done ? <Check size={17} /> : unit.number}</span>
-              <span className="snapshot-icon">{unit.icon}</span>
+              <span className="snapshot-icon"><AppIcon icon={unit.icon} /></span>
               <span><small>{unit.eyebrow}</small><strong>{unit.title}</strong></span>
               <ChevronRight size={18} />
             </button>
@@ -300,6 +302,7 @@ function SpeechMiniPractice({ phrase, onSuccess }) {
 
 function App() {
   const [initialLoad] = useState(() => loadProgressResult());
+  const [theme, setTheme] = useState(getInitialTheme);
   const [route, setRoute] = useState(() => viewFromHash(window.location.hash));
   const view = route.view;
   const [progress, setProgress] = useState(initialLoad.progress);
@@ -311,6 +314,7 @@ function App() {
       : "This browser is not allowing local progress to be read or saved right now.",
   } : null);
   const [activeUnit, setActiveUnit] = useState(null);
+  const [updateReady, setUpdateReady] = useState(false);
   const unitTriggerRef = useRef(null);
   const [toast, setToast] = useState("");
   const toastTimerRef = useRef(null);
@@ -348,8 +352,21 @@ function App() {
   }, []);
   useEffect(() => () => window.clearTimeout(toastTimerRef.current), []);
   useEffect(() => {
+    const handler = () => setUpdateReady(true);
+    window.addEventListener("czesc:update-ready", handler);
+    return () => window.removeEventListener("czesc:update-ready", handler);
+  }, []);
+  useEffect(() => {
     if (!window.location.hash) window.history.replaceState(null, "", "#home");
   }, []);
+  const themeMounted = useRef(false);
+  useEffect(() => {
+    // The pre-paint script in index.html has already applied the initial theme;
+    // only write back (and touch storage) when the learner actually toggles.
+    if (!themeMounted.current) { themeMounted.current = true; return; }
+    applyTheme(theme);
+  }, [theme]);
+  const toggleTheme = () => setTheme((current) => (current === "dark" ? "light" : "dark"));
   useEffect(() => {
     const label = view === "session" ? "Daily session" : NAV_ITEMS.find((item) => item.id === view)?.label ?? "Today";
     document.title = `${label} · Cześć!`;
@@ -494,10 +511,10 @@ function App() {
     <>
     <a className="skip-link" href="#main-content" onClick={skipToContent}>Skip to main content</a>
     <div className={`app-shell ${focusMode ? "learning-mode" : ""}`}>
-      {!focusMode && <Sidebar view={view} progress={progress} dueCount={dueCount} onNavigate={navigate} />}
+      {!focusMode && <Sidebar view={view} progress={progress} dueCount={dueCount} onNavigate={navigate} theme={theme} onToggleTheme={toggleTheme} />}
 
       <div className={`app-main ${focusMode ? "focus-mode" : ""}`}>
-        {!focusMode && <MobileHeader label={currentLabel} xp={progress.xp} />}
+        {!focusMode && <MobileHeader label={currentLabel} xp={progress.xp} theme={theme} onToggleTheme={toggleTheme} />}
         {storageIssue && <div className="storage-alert" role="alert"><CircleHelp size={18} /><span><strong>Local progress needs attention</strong>{storageIssue.message}</span><button className="secondary-button" onClick={retryLocalSave}>{storageIssue.kind === "recovery" ? "Use fresh progress" : "Try saving again"}</button></div>}
         <main id="main-content" className="content" ref={mainRef} tabIndex={-1}>
           <Suspense fallback={<div className="route-loading" role="status">Loading this section…</div>}>
@@ -517,6 +534,13 @@ function App() {
 
       {!focusMode && <BottomNav view={view} dueCount={dueCount} progress={progress} onNavigate={navigate} />}
       {activeUnit && <UnitLesson unit={activeUnit} progress={progress} onClose={() => setActiveUnit(null)} award={award} returnFocus={unitTriggerRef.current} />}
+      {updateReady && (
+        <div className="update-banner" role="alert">
+          <span><strong>A fresh version is ready</strong>Reload to pick up the latest lessons and fixes.</span>
+          <button className="primary-button" onClick={() => window.location.reload()}>Reload</button>
+          <button className="update-dismiss" aria-label="Keep the current version for now" onClick={() => setUpdateReady(false)}><X size={17} /></button>
+        </div>
+      )}
       {toast && <div className="toast" role="status" aria-live="polite"><Star size={17} fill="currentColor" /> {toast}</div>}
     </div>
     </>

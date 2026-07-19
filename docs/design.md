@@ -52,6 +52,16 @@ https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,40
 
 Spend boldness in one place per screen. One loud crimson CTA leads each page; repeated card CTAs use the quiet `--red-soft` treatment (see `.unit-card .primary-button`).
 
+## Iconography
+
+Units, scenes, and celebrations use a custom icon family (`src/components/AppIcon.jsx`) instead of system emoji — flat 24×24 poster marks drawn in `currentColor` with a 42%-opacity duotone pass, so one definition adapts to light chips, dark surfaces, and crimson accents. Icons size from the parent's `font-size` (`1em`). Data files keep their original emoji strings as lookup keys; unknown keys fall back to rendering the raw emoji, so new content never breaks. When adding an icon, favour two or three bold geometric shapes over outline detail — the marks are read at 21–34 px.
+
+## Theming (night gallery)
+
+The app ships a light default and a dark "night gallery" theme. `index.html` applies the saved choice (`localStorage` key `czesc-theme`, falling back to `prefers-color-scheme`) in a pre-paint script, so there is no flash of the wrong theme; `src/lib/theme.js` persists changes and syncs the `theme-color` meta. Toggles live in the sidebar footer and the mobile header.
+
+The dark theme works by inverting the tokens (`[data-theme="dark"]` at the end of `src/styles.css`): `--paper` becomes warm near-black, `--surface` a lifted brown-black, `--red-soft` a translucent crimson tint, and text-on-tint colours (`--red-dark`, `--muted`, feedback hues) lighten to stay readable. The crimson hero, print grain, navy ink blocks, and gradients are shared between themes — do not fork them. Warm literal tints (tip cards, amber notes) have explicit dark overrides beside the token block. When adding a new surface, use tokens and check both themes; new literal tints need a dark override.
+
 ## Legibility rules
 
 - Minimum UI font size is 10 px. An 8–9 px pass was removed once; do not reintroduce smaller sizes.
@@ -61,6 +71,7 @@ Spend boldness in one place per screen. One loud crimson CTA leads each page; re
 ## Interaction conventions
 
 - **Drill keyboard shortcuts** (`src/lib/drill-keys.js`): Space reveals a card or replays its audio; 1–4 select Again/Hard/Good/Easy. The hook ignores key events targeting inputs, selects, textareas, and focused buttons. `.key-hint` badges advertise the keys and render only under `(hover: hover) and (pointer: fine)`, so touch devices never see them. New drill screens should wire the same hook rather than adding bespoke listeners.
+- **Diacritics entry** (`src/components/DiacriticsBar.jsx`): every Polish typing surface (dictation, controlled writing, grammar gaps, milestone writing tasks) offers the nine Polish letters for tap-to-insert at the caret. Pointer activation is prevented from stealing input focus, and the caret is restored after insertion; wire the same component rather than adding bespoke pickers.
 - **Polish voice preference** (`src/lib/speech.js`): `setPreferredPolishVoice` persists a voice name to `localStorage` (`czesc-polish-voice`) with an in-memory fallback; `listPolishVoices` returns the device's Polish voices best-first. The Sound Lab's voice bar is the only UI that writes this preference. When no Polish voice exists, show guidance rather than hiding the concept.
 
 ## Visual regression suite
