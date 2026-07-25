@@ -1,42 +1,102 @@
 # Cześć! — Polish for real life
 
-A conversational, pronunciation-first Polish course that grows from complete-beginner survival language through confident B1 communication and towards a practical B2 bridge. It runs entirely in the browser and saves learning progress locally.
+**A pronunciation-first, local-first Polish course that turns useful phrases into real conversations.** It starts with complete-beginner survival language, builds towards confident B1 communication, and continues into a practical B2 bridge.
 
-## Start the app
+[**Try the live course →**](https://peterlp123.github.io/polish-first/) · [Explore the design system](docs/design.md)
+
+[![Quality](https://github.com/PeterLP123/polish-first/actions/workflows/quality.yml/badge.svg)](https://github.com/PeterLP123/polish-first/actions/workflows/quality.yml)
+[![Deploy to GitHub Pages](https://github.com/PeterLP123/polish-first/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/PeterLP123/polish-first/actions/workflows/deploy-pages.yml)
+[![React](https://img.shields.io/badge/React-PWA-213049?logo=react&logoColor=white)](https://react.dev/)
+
+![The Cześć home screen, showing a guided daily session, progress, and pronunciation practice](e2e/visual.spec.js-snapshots/home-chromium-desktop-darwin.png)
+
+## Why this project
+
+Most beginner resources separate vocabulary, grammar, pronunciation, and speaking. Cześć brings them into one finite daily loop: learn a useful phrase, hear it, recall it at the right time, and use it in a realistic conversation.
+
+The app has no account system or external backend. Progress stays in the browser, the installed course works offline after the first visit, and microphone practice remains optional.
+
+## Product proof
+
+| Curriculum | Practice | Progress |
+| --- | --- | --- |
+| 81 conversation-led units | 42 branching dialogues | Due-date spaced repetition |
+| 938 useful words and phrases | 24 Polish sound lessons | Finite guided daily sessions |
+| 66 grammar explainers | 36 readings + 36 writing tasks | XP, streaks, goals, and mastery |
+| Beginner survival Polish → B2 bridge | Flashcard, listening, building, speaking, reading, writing, and grammar modes | 10 multi-skill stage checks |
+
+## What makes it useful
+
+- **Speak from day one.** Every phrase combines browser-spoken Polish audio with an English-friendly pronunciation guide.
+- **Practise without perfect hardware.** Microphone recognition is optional; phone dictation and self-report fallbacks keep speaking work available across browsers.
+- **Review what is actually weak.** Again, Hard, Good, and Easy ratings schedule due reviews and prioritise weaker phrases.
+- **Move from recall to conversation.** Five-turn dialogue scenes cover introductions, travel, work, negotiations, presentations, and more.
+- **Keep sessions finishable.** Daily plans mix due reviews, new language, and one real-life dialogue instead of creating an endless feed.
+- **Own your progress.** Learning data stays in `localStorage` and can be validated, exported, and imported.
+
+## Inside the course
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="e2e/visual.spec.js-snapshots/sounds-chromium-desktop-darwin.png" alt="Polish Sound Lab with pronunciation guidance and listening practice">
+      <br><strong>Sound Lab</strong> — focused pronunciation and minimal-pair listening.
+    </td>
+    <td width="50%">
+      <img src="e2e/visual.spec.js-snapshots/dialogues-chromium-desktop-darwin.png" alt="Branching Polish conversation practice">
+      <br><strong>Dialogues</strong> — practical scenes with branching responses.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="e2e/visual.spec.js-snapshots/course-webkit-mobile-darwin.png" alt="Responsive Polish course map on a mobile screen">
+      <br><strong>Course map</strong> — 81 searchable units from first words to a B2 bridge.
+    </td>
+    <td width="50%">
+      <img src="e2e/visual.spec.js-snapshots/guided-session-webkit-mobile-darwin.png" alt="Guided daily Polish practice on a mobile screen">
+      <br><strong>Guided sessions</strong> — a clear, finite plan for each day.
+    </td>
+  </tr>
+</table>
+
+## Engineering highlights
+
+- React and Vite single-page application with a hand-built component and token-based design system
+- Installable PWA with offline caching, update prompts, self-hosted fonts, and no runtime CDN dependency
+- Content schemas and generated catalogues for phrases, dialogues, readings, writing tasks, grammar guides, and milestones
+- Browser speech synthesis with persisted Polish voice selection and graceful recognition fallbacks
+- Versioned learning-state migrations plus validated progress export and import
+- Responsive desktop, tablet, and mobile layouts with light and dark themes
+- Keyboard drill controls, Polish diacritic entry helpers, visible focus states, and reduced-motion support
+- Vitest component and domain tests, Playwright functional journeys, and desktop/mobile visual regression coverage
+
+The visual identity draws on the Polish School of Posters: poster crimson, granat navy, warm paper, bold display type, and restrained print grain. Its tokens and contribution conventions are documented in [docs/design.md](docs/design.md).
+
+## Project structure
+
+```text
+src/components/       Learning views and reusable interface components
+src/data/content/     Schema-checked curriculum and activity content
+src/lib/              Learning, navigation, speech, storage, and theme logic
+public/               PWA manifest, icons, and service worker
+e2e/                  Functional and visual Playwright coverage
+docs/                 Design-system documentation and portfolio assets
+```
+
+## Run locally
+
+Requires Node.js 22 or later.
 
 ```bash
-npm install
+git clone https://github.com/PeterLP123/polish-first.git
+cd polish-first
+npm ci
 npm run dev
 ```
 
-Open the local address Vite prints, normally [http://localhost:5173](http://localhost:5173).
+Open the address Vite prints, normally [http://localhost:5173](http://localhost:5173).
 
-The current production version is available at [https://peterlp123.github.io/polish-first/](https://peterlp123.github.io/polish-first/). On a phone, use the browser's **Add to Home Screen** option for an app-like launch and offline access after the first visit.
-
-## Included
-
-- 938 useful words and phrases across 81 practical conversation units
-- Polish audio through the browser's `pl-PL` speech voice, with a persisted voice picker in the Sound Lab
-- English-friendly pronunciation guides alongside browser-spoken Polish audio
-- Optional microphone practice, phone-dictation fallback, and approximate speech-match feedback
-- Forty-two five-turn branching dialogues with three response options per turn, from first introductions to presentations, contract questions, negotiations, and public consultations
-- Flashcard, listening, sentence-building, and speaking drills that prioritise your weakest phrases
-- Finite daily sessions that mix new phrases, due reviews, and a real-life dialogue
-- Due-date spaced repetition with Again, Hard, Good, and Easy ratings
-- Twenty-four Polish sound lessons and sixty-six grammar explainers spanning beginner foundations through a B2 bridge
-- A "Hear the difference" minimal-pair listening drill for the classic hard/soft sound traps (sz/ś, cz/ć, ż/ź and more)
-- On-screen Polish letter buttons (ą ć ę ł ń ó ś ź ż) on every typing task, for keyboards without a Polish layout
-- A dark "night gallery" theme with a persisted preference, plus a reload prompt when a new version is ready offline
-- Thirty-six practical readings and thirty-six controlled-writing tasks, including extended texts, proposals, formal correspondence, reflective narratives, evidence evaluation, and argument-building
-- Ten stage checks covering listening, reading, grammar, recall, writing, dialogue, and speaking
-- XP, streaks, an adjustable daily goal, weekly activity, phrase mastery, and dialogue records saved in `localStorage`
-- Validated progress export/import plus a privacy-safe tester diagnostics summary
-- Keyboard shortcuts in drills: Space reveals or replays a card, 1–4 rate it
-- Responsive desktop, tablet, and mobile layouts with self-hosted fonts, so the installed app works fully offline
-
-Chrome and Edge provide the broadest support for microphone speech recognition. Audio playback and all non-microphone learning modes work in other current browsers.
-
-## Checks
+## Quality checks
 
 ```bash
 npm test
@@ -44,8 +104,10 @@ npm run build
 npm run test:e2e
 ```
 
-Pushes to `main` deploy automatically to GitHub Pages. The deployment workflow supplies the `/polish-first/` base path while local development continues to use `/`.
+Pushes and pull requests run unit tests, a production build, and functional browser tests. Pushes to `main` deploy automatically to GitHub Pages.
 
-## Design
+Chrome and Edge provide the broadest microphone speech-recognition support. Audio playback and all non-microphone modes work in other current browsers.
 
-The visual identity, typography, and the conventions for keeping new UI and the visual regression suite consistent are documented in [docs/design.md](docs/design.md).
+## Project status
+
+Cześć is an actively developed personal portfolio project. Its source is public for review and learning, but no licence for reuse or redistribution is currently granted.
