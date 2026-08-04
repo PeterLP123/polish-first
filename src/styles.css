@@ -187,8 +187,9 @@ main h1[tabindex="-1"]:focus { outline: none; }
 .text-button { color: #6a706d; background: transparent; padding-inline: 10px; }.text-button:hover { background: var(--wash); }
 .speech-result { margin-top: 15px; padding: 12px; display: flex; align-items: center; gap: 11px; border-radius: 13px; }
 .speech-result.good { color: #255e4f; background: var(--green-soft); }.speech-result.retry { color: #835326; background: #f8ebd7; }
-.score-badge { width: 45px; height: 45px; display: grid; place-items: center; background: rgba(255,255,255,.7); border-radius: 50%; font-weight: 800; font-size: 11px; }
-.speech-result > div:last-child { display: flex; flex-direction: column; font-size: 12px; }.speech-result span { opacity: .8; margin-top: 2px; }
+.score-badge { width: 68px; min-height: 58px; flex: 0 0 auto; display: grid; place-items: center; align-content: center; gap: 1px; padding: 7px; background: rgba(255,255,255,.7); border-radius: 14px; text-align: center; }
+.score-badge strong { font-size: 14px; }.score-badge span { font-size: 8px; line-height: 1.15; text-transform: uppercase; }
+.speech-result-copy { display: flex; flex-direction: column; font-size: 12px; }.speech-result-copy > span { opacity: .8; margin-top: 2px; }.speech-result-copy p { margin: 6px 0 2px; font-size: 10px; opacity: .78; }.speech-result-copy small { margin-top: 4px; line-height: 1.4; }
 .speech-error { color: #8d4c3d; background: #fff1ec; border-radius: 10px; padding: 9px 11px; margin: 14px 0 0; display: flex; gap: 7px; font-size: 11px; }
 .listening-status { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; color: var(--red-dark); font-size: 12px; font-weight: 700; }
 .listening-status > span { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 5px rgba(210, 36, 43, .12); }
@@ -590,6 +591,25 @@ main h1[tabindex="-1"]:focus { outline: none; }
 .practice-toolbar { position: sticky; top: 0; z-index: 12; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 0; background: rgba(247, 244, 236, .92); backdrop-filter: blur(14px); }
 .practice-toolbar .mode-tabs { min-width: 0; }
 .practice-toolbar .practice-filter { align-self: center; }
+.practice-mode-toggle { display: none; }
+.practice-recommendation { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; padding: 19px 22px; }
+.practice-recommendation > div { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 4px 12px; }
+.practice-recommendation strong { font: 800 20px "Bricolage Grotesque"; }
+.practice-recommendation p { grid-column: 1 / -1; margin: 3px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.writing-feedback { display: grid; gap: 14px; padding: 17px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.writing-feedback.correct { border-color: #9ac2b1; background: #f2faf7; }
+.writing-feedback.wrong { border-color: #ddafa1; background: #fff7f3; }
+.writing-feedback-heading { display: flex; justify-content: space-between; gap: 14px; }
+.writing-feedback-heading > span { color: var(--muted); font-size: 10px; font-weight: 700; }
+.writing-rubric { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.writing-rubric article { padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--surface) 88%, transparent); }
+.writing-rubric article > span, .writing-model > span { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.writing-rubric article > strong { display: block; margin-top: 4px; font-size: 12px; }
+.writing-rubric p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.writing-model { padding: 13px 14px; border-left: 3px solid var(--red); background: var(--red-soft); border-radius: 4px 12px 12px 4px; }
+.writing-model p { margin: 5px 0 0; font-weight: 700; line-height: 1.5; }
+.writing-model small { display: block; margin-top: 5px; color: var(--muted); }
+.writing-feedback > .primary-button { justify-self: end; }
 
 .mobile-picker-trigger { display: none; width: 100%; min-height: 64px; padding: 12px 15px; border: 1px solid var(--line); align-items: center; justify-content: space-between; text-align: left; }
 .mobile-picker-trigger > span { display: flex; flex-direction: column; gap: 2px; }
@@ -710,6 +730,13 @@ main h1[tabindex="-1"]:focus { outline: none; }
   .lesson-meta { margin-bottom: 16px; }
   .poster-letter { font-size: 155px; right: 10px; bottom: 8px; opacity: .3; text-shadow: 6px 5px 0 rgba(64, 9, 12, .3); }
   .practice-toolbar { display: flex; flex-direction: column; align-items: stretch; margin-inline: -20px; padding: 8px 20px 10px; }
+  .practice-mode-toggle { display: flex; width: 100%; justify-content: center; }
+  .mode-tabs.mobile-collapsed { display: none; }
+  .practice-recommendation { grid-template-columns: 1fr; padding: 17px; }
+  .practice-recommendation > .primary-button { width: 100%; }
+  .writing-rubric { grid-template-columns: 1fr; }
+  .writing-feedback-heading { flex-direction: column; gap: 3px; }
+  .writing-feedback > .primary-button { width: 100%; }
   .mode-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; gap: 7px; padding: 5px; }
   .mode-tabs button { min-width: 0; min-height: 56px; padding: 9px 7px; }
   .mode-tabs button span { display: flex; }
@@ -818,6 +845,9 @@ main h1[tabindex="-1"]:focus { outline: none; }
 [data-theme="dark"] .quiz-feedback p, [data-theme="dark"] .choice-feedback p { color: var(--muted); }
 [data-theme="dark"] .builder-feedback.correct { color: #6fd3ae; }
 [data-theme="dark"] .builder-feedback.wrong { color: #eba79e; background: #301a17; }
+[data-theme="dark"] .writing-feedback.correct { border-color: #2c5c49; background: #16281f; }
+[data-theme="dark"] .writing-feedback.wrong { border-color: #6b332c; background: #301a17; }
+[data-theme="dark"] .writing-model { background: #351d1b; }
 [data-theme="dark"] .speech-result.good { color: #6fd3ae; }
 [data-theme="dark"] .speech-result.retry { color: #dbb06f; background: #2e2412; }
 [data-theme="dark"] .speech-error { color: #eba79e; background: #301a17; }

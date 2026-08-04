@@ -29,6 +29,8 @@ describe("mobile pronunciation input", () => {
     fireEvent.click(screen.getByRole("button", { name: /check transcript/i }));
 
     expect(screen.getByText("100%")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/transcript match/i);
+    expect(screen.getByRole("status")).toHaveTextContent(/compares the words transcribed, not your accent/i);
     expect(onComplete).toHaveBeenCalledWith(1);
   });
 

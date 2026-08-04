@@ -987,12 +987,67 @@ export function normalisePolish(value = "") {
 }
 
 export function scoreWriting(item, input) {
+  return evaluateWriting(item, input).score;
+}
+
+const POLISH_ASCII = { ą: "a", ć: "c", ę: "e", ł: "l", ń: "n", ó: "o", ś: "s", ź: "z", ż: "z" };
+
+function withoutPolishMarks(value) {
+  return normalisePolish(value).replace(/[ąćęłńóśźż]/g, (letter) => POLISH_ASCII[letter]);
+}
+
+export function evaluateWriting(item, input) {
   const value = normalisePolish(input);
-  if (!value) return 0;
-  if ((item.acceptedAnswers ?? []).some((answer) => normalisePolish(answer) === value)) return 1;
-  if (item.kind === "translation") return 0;
-  const tokens = new Set(value.split(/\s+/));
-  return (item.requiredTokens ?? []).every((token) => tokens.has(normalisePolish(token))) ? 1 : 0;
+  const answers = item.acceptedAnswers ?? [];
+  const closestAnswer = answers.reduce((best, answer) => {
+    const match = similarity(value, answer);
+    return !best || match > best.match ? { answer, match } : best;
+  }, null) ?? { answer: "", match: 0 };
+  const requiredTokens = (item.requiredTokens ?? []).map(normalisePolish).filter(Boolean);
+  const paddedValue = ` ${value} `;
+  const missingTokens = requiredTokens.filter((token) => !paddedValue.includes(` ${token} `));
+  const meaningCoverage = requiredTokens.length
+    ? (requiredTokens.length - missingTokens.length) / requiredTokens.length
+    : closestAnswer.match;
+  const exact = Boolean(value) && answers.some((answer) => normalisePolish(answer) === value);
+  const passed = exact || (item.kind !== "translation" && requiredTokens.length > 0 && missingTokens.length === 0);
+  const markInsensitiveMatch = Boolean(value && closestAnswer.answer) && withoutPolishMarks(value) === withoutPolishMarks(closestAnswer.answer);
+  const diacritics = exact || !markInsensitiveMatch ? "ok" : "check";
+
+  return {
+    score: passed ? 1 : 0,
+    exact,
+    closestAnswer: closestAnswer.answer,
+    alternatives: answers,
+    missingTokens,
+    meaning: {
+      value: Number(meaningCoverage.toFixed(3)),
+      status: meaningCoverage === 1 ? "pass" : meaningCoverage >= 0.5 ? "partial" : "retry",
+    },
+    form: {
+      value: Number(closestAnswer.match.toFixed(3)),
+      status: exact ? "pass" : closestAnswer.match >= 0.72 ? "close" : "retry",
+    },
+    diacritics: {
+      status: diacritics,
+      message: diacritics === "check" ? "The words match the model without Polish marks; restore the highlighted letters." : "Polish marks do not explain the difference.",
+    },
+  };
+}
+
+export function diagnosePronunciation(expected, transcript) {
+  const expectedValue = normalisePolish(expected);
+  const transcriptValue = normalisePolish(transcript);
+  const expectedWords = expectedValue.split(/\s+/).filter(Boolean);
+  const transcriptWords = transcriptValue.split(/\s+/).filter(Boolean);
+  const transcriptSet = new Set(transcriptWords);
+  const expectedSet = new Set(expectedWords);
+  return {
+    score: similarity(transcriptValue, expectedValue),
+    missingWords: expectedWords.filter((word) => !transcriptSet.has(word)),
+    extraWords: transcriptWords.filter((word) => !expectedSet.has(word)),
+    diacriticsOnly: Boolean(expectedValue && transcriptValue && expectedValue !== transcriptValue && withoutPolishMarks(expectedValue) === withoutPolishMarks(transcriptValue)),
+  };
 }
 
 export function scoreCloze(item, input) {

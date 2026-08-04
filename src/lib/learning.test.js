@@ -9,7 +9,9 @@ import {
   buildReviewDeck,
   createDemoProgress,
   diagnosticsSummary,
+  diagnosePronunciation,
   effectiveStreak,
+  evaluateWriting,
   getDuePhrases,
   intervalForRating,
   localDate,
@@ -271,6 +273,25 @@ describe("learning helpers", () => {
     expect(scoreWriting(translation, "O której")).toBe(0);
     expect(scoreWriting(translation, "O której odjeżdża pociąg?")).toBe(1);
     expect(scoreCloze(clozeItems[0], clozeItems[0].acceptedAnswers[0])).toBe(1);
+  });
+
+  it("explains writing gaps across meaning, form, and Polish marks", () => {
+    const item = writingItems[0];
+    const exact = evaluateWriting(item, item.acceptedAnswers[0]);
+    expect(exact).toMatchObject({ score: 1, exact: true, missingTokens: [], meaning: { status: "pass" }, form: { status: "pass" }, diacritics: { status: "ok" } });
+
+    const withoutMarks = item.acceptedAnswers[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ł/g, "l");
+    const marked = evaluateWriting(item, withoutMarks);
+    if (withoutMarks !== item.acceptedAnswers[0]) expect(marked.diacritics.status).toBe("check");
+
+    const incomplete = evaluateWriting(item, item.requiredTokens.slice(0, -1).join(" "));
+    expect(incomplete.score).toBe(0);
+    expect(incomplete.missingTokens.length).toBeGreaterThan(0);
+  });
+
+  it("describes transcript differences without presenting them as an accent score", () => {
+    expect(diagnosePronunciation("Dzień dobry", "dzien dobry")).toMatchObject({ diacriticsOnly: true, missingWords: ["dzień"], extraWords: ["dzien"] });
+    expect(diagnosePronunciation("Dzień dobry", "dobry").score).toBeLessThan(0.7);
   });
 
   it("uses exact skill boundaries and deterministic recommendations", () => {

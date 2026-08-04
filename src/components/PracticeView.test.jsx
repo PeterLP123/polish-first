@@ -26,7 +26,16 @@ describe("expanded practice modes", () => {
     fireEvent.change(screen.getByLabelText(/your Polish/i), { target: { value: writingItems[0].acceptedAnswers[0] } });
     fireEvent.click(screen.getByRole("button", { name: /check response/i }));
     expect(screen.getByRole("status")).toHaveTextContent(/required meaning included/i);
+    expect(screen.getByRole("status")).toHaveTextContent(/meaning.*covered/i);
+    expect(screen.getByRole("status")).toHaveTextContent(/form & order.*model match/i);
+    expect(screen.getByRole("status")).toHaveTextContent(/closest model/i);
     expect(onAttempt).toHaveBeenCalledWith(writingItems[0].id, "writing", "writing", 1);
+  });
+
+  it("puts one recommended action before the full drill chooser", () => {
+    render(<PracticeView progress={DEFAULT_PROGRESS} award={vi.fn()} />);
+    expect(screen.getByRole("region", { name: /recommended practice/i })).toHaveTextContent(/best next drill.*flashcards/i);
+    expect(screen.getByRole("button", { name: /choose another drill/i })).toHaveAttribute("aria-expanded", "false");
   });
 
   it("exposes the grammar mode with an explicitly named tab", () => {

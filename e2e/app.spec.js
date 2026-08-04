@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
 
+async function revealPracticeModes(page) {
+  const chooser = page.getByRole("button", { name: /choose another drill/i });
+  if (await chooser.isVisible()) await chooser.click();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/#home");
   await page.evaluate(() => localStorage.clear());
@@ -39,6 +44,7 @@ test("keeps core pages within the mobile viewport", async ({ page }) => {
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#practice");
+  await page.getByRole("button", { name: /choose another drill/i }).click();
   for (const label of ["Flashcards", "Listen", "Build it", "Speak", "Reading", "Write", "Grammar"]) {
     await expect(page.getByRole("tab", { name: label })).toBeVisible();
   }
@@ -46,8 +52,9 @@ test("keeps core pages within the mobile viewport", async ({ page }) => {
 
 test("opens the new practice modes from validated deep links", async ({ page }) => {
   await page.goto("/#practice?mode=reading&topic=Travel");
-  await expect(page.getByRole("tab", { name: /reading/i })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByText("READ A PRACTICAL TEXT")).toBeVisible();
+  await revealPracticeModes(page);
+  await expect(page.getByRole("tab", { name: /reading/i })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("tab", { name: /^write/i }).click();
   await expect(page.getByText("CONTROLLED WRITING")).toBeVisible();
   await page.getByRole("tab", { name: /grammar/i }).click();
@@ -110,6 +117,7 @@ test("keeps Polish text and dictation inputs mobile-ready", async ({ page }) => 
   await expect(writing).toHaveAttribute("enterkeyhint", "done");
   expect(Number.parseFloat(await writing.evaluate((element) => getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16);
 
+  await revealPracticeModes(page);
   await page.getByRole("tab", { name: /^speak/i }).click();
   await page.getByRole("button", { name: /phone dictation/i }).click();
   const dictation = page.getByRole("textbox", { name: /what did your phone hear/i });

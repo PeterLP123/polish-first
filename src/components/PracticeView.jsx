@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen, Brain, Check, FilePenLine, Headphones, Languages, Lightbulb, Mic, RotateCcw, Trophy, Volume2, X } from "lucide-react";
 import { allPhrases, clozeItems, courseTopics, readings, units, writingItems } from "../data/course.js";
-import { buildReviewDeck, nextUnitForProgress, scoreCloze, scoreForRating, scoreReading, scoreWriting, shuffled, similarity } from "../lib/learning.js";
+import { buildReviewDeck, evaluateWriting, nextRecommendation, nextUnitForProgress, scoreCloze, scoreForRating, scoreReading, shuffled, similarity } from "../lib/learning.js";
 import { useDrillKeys } from "../lib/drill-keys.js";
 import { speakPolish } from "../lib/speech.js";
 import { AudioButton, PronunciationCard } from "./LearningControls.jsx";
@@ -18,6 +18,7 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
   const topicOptions = [...courseTopics, "Entire course"];
   const [mode, setMode] = useState(initialMode);
   const [topic, setTopic] = useState(topicOptions.includes(initialTopic) ? initialTopic : "All");
+  const [showModeChooser, setShowModeChooser] = useState(false);
   const tabRefs = useRef([]);
   useEffect(() => setMode(initialMode), [initialMode]);
   useEffect(() => setTopic(topicOptions.includes(initialTopic) ? initialTopic : "All"), [initialTopic]);
@@ -31,6 +32,9 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
     { id: "grammar", label: "Grammar", icon: Lightbulb, hint: "Complete the gap" },
   ];
   const nextUnit = nextUnitForProgress(progress);
+  const recommendation = nextRecommendation(progress);
+  const recommendedMode = recommendation.kind === "practice" && modes.some((item) => item.id === recommendation.mode) ? recommendation.mode : "flashcards";
+  const recommendedLabel = modes.find((item) => item.id === recommendedMode)?.label ?? "Flashcards";
   const recommendedIds = new Set(buildReviewDeck(progress, 60).map((phrase) => phrase.id));
   progress.learnedPhrases.forEach((id) => recommendedIds.add(id));
   allPhrases.filter((phrase) => phrase.stage === nextUnit.stage).forEach((phrase) => recommendedIds.add(phrase.id));
@@ -41,6 +45,7 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
   const grammarPool = topic === "All" ? clozeItems.filter((item) => item.stage === nextUnit.stage) : topic === "Entire course" ? clozeItems : clozeItems.filter((item) => item.topic === topic);
   const updateRoute = (nextMode, nextTopic) => window.history.replaceState(null, "", `#practice?mode=${encodeURIComponent(nextMode)}&topic=${encodeURIComponent(nextTopic)}`);
   const selectMode = (nextMode) => { setMode(nextMode); updateRoute(nextMode, topic); };
+  const startRecommended = () => { selectMode(recommendedMode); setShowModeChooser(false); };
   const selectTopic = (nextTopic) => { setTopic(nextTopic); updateRoute(mode, nextTopic); };
   const moveTabFocus = (event, index) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
@@ -53,8 +58,13 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
   return (
     <div className="view-stack practice-page">
       <header className="page-header"><div><span className="eyebrow red"><Brain size={15} /> PRACTICE STUDIO</span><h1>Make it stick</h1><p>Choose a drill whenever you want extra practice. Ratings feed the same review schedule as your daily session.</p></div><div className="mastery-chip"><Trophy size={21} /><span><strong>{progress.totalReviews}</strong> reviews</span></div></header>
+      <section className="practice-recommendation panel" aria-label="Recommended practice">
+        <div><span className="eyebrow">BEST NEXT DRILL</span><strong>{recommendedLabel}</strong><p>{recommendation.kind === "practice" ? recommendation.reason : `${nextUnit.stage} recall is the clearest practice starting point.`}</p></div>
+        <button className="primary-button" onClick={startRecommended}>Start {recommendedLabel} <ArrowRight size={17} /></button>
+      </section>
       <div className="practice-toolbar">
-        <div className="mode-tabs" role="tablist" aria-label="Practice mode">
+        <button className="secondary-button practice-mode-toggle" aria-expanded={showModeChooser} onClick={() => setShowModeChooser((open) => !open)}>{showModeChooser ? "Hide drill choices" : `Choose another drill · ${modes.find((item) => item.id === mode)?.label}`}</button>
+        <div className={`mode-tabs ${showModeChooser ? "" : "mobile-collapsed"}`} role="tablist" aria-label="Practice mode">
           {modes.map(({ id, label, icon: Icon, hint }, index) => <button key={id} id={`practice-tab-${id}`} ref={(element) => { tabRefs.current[index] = element; }} role="tab" aria-label={label} aria-selected={mode === id} aria-controls={`practice-panel-${id}`} tabIndex={mode === id ? 0 : -1} className={mode === id ? "active" : ""} onKeyDown={(event) => moveTabFocus(event, index)} onClick={() => selectMode(id)}><Icon size={20} /><span><strong>{label}</strong><small>{hint}</small></span></button>)}
         </div>
         <label className="practice-filter">Practice set <select value={topic} onChange={(event) => selectTopic(event.target.value)}>{topicOptions.map((item) => <option key={item} value={item}>{item === "All" ? "Recommended" : item}</option>)}</select></label>
@@ -239,13 +249,13 @@ function WritingPractice({ items, award, onAttempt }) {
   const inputRef = useRef(null);
   const item = items[index % items.length];
   const submit = () => {
-    const score = scoreWriting(item, value);
-    setResult(score);
-    award({ xp: score ? 12 : 2, minutes: 2 }, score ? "Controlled writing complete" : "Review the model answer");
-    onAttempt(item.id, "writing", "writing", score);
+    const evaluation = evaluateWriting(item, value);
+    setResult(evaluation);
+    award({ xp: evaluation.score ? 12 : 2, minutes: 2 }, evaluation.score ? "Controlled writing complete" : "Review the model answer");
+    onAttempt(item.id, "writing", "writing", evaluation.score);
   };
   const next = () => { setIndex((value) => value + 1); setValue(""); setResult(null); };
-  return <section className="practice-stage text-practice"><span className="eyebrow">CONTROLLED WRITING</span><h2>{item.prompt}</h2><label>Your Polish<textarea ref={inputRef} rows="5" lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={value} disabled={result !== null} onChange={(event) => setValue(event.target.value)} placeholder="Write or use your phone keyboard's microphone" /></label><DiacriticsBar inputRef={inputRef} value={value} onChange={setValue} disabled={result !== null} />{result === null ? <button className="primary-button" disabled={!value.trim()} onClick={submit}>Check response</button> : <div className={`builder-feedback ${result ? "correct" : "wrong"}`} role="status"><strong>{result ? "Required meaning included." : "Use the model and compare the meaning."}</strong><span>Model: <span lang="pl">{item.acceptedAnswers[0]}</span></span><button className="primary-button" onClick={next}>Next prompt</button></div>}</section>;
+  return <section className="practice-stage text-practice"><span className="eyebrow">CONTROLLED WRITING</span><h2>{item.prompt}</h2><label>Your Polish<textarea ref={inputRef} rows="5" lang="pl" inputMode="text" enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" autoCorrect="on" spellCheck value={value} disabled={result !== null} onChange={(event) => setValue(event.target.value)} placeholder="Write or use your phone keyboard's microphone" /></label><DiacriticsBar inputRef={inputRef} value={value} onChange={setValue} disabled={result !== null} />{result === null ? <button className="primary-button" disabled={!value.trim()} onClick={submit}>Check response</button> : <div className={`writing-feedback ${result.score ? "correct" : "wrong"}`} role="status"><div className="writing-feedback-heading"><strong>{result.score ? "Required meaning included." : "Compare your response with the model."}</strong><span>{result.exact ? "Exact model match" : `${Math.round(result.form.value * 100)}% closest transcript match`}</span></div><div className="writing-rubric"><article><span>Meaning</span><strong>{result.meaning.status === "pass" ? "Covered" : result.meaning.status === "partial" ? "Partly covered" : "Needs another pass"}</strong><p>{result.missingTokens.length ? <>Still missing: <b lang="pl">{result.missingTokens.join(", ")}</b></> : "All required ideas are present."}</p></article><article><span>Form & order</span><strong>{result.form.status === "pass" ? "Model match" : result.form.status === "close" ? "Close" : "Different structure"}</strong><p>{result.exact ? "Word choice and order match an accepted answer." : "Read your version beside the closest model below."}</p></article><article><span>Polish marks</span><strong>{result.diacritics.status === "check" ? "Check marks" : "Not the issue"}</strong><p>{result.diacritics.message}</p></article></div><div className="writing-model"><span>Closest model</span><p lang="pl">{result.closestAnswer}</p>{result.alternatives.length > 1 && <small>{result.alternatives.length - 1} other accepted {result.alternatives.length === 2 ? "answer" : "answers"}</small>}</div><button className="primary-button" onClick={next}>Next prompt</button></div>}</section>;
 }
 
 function GrammarPractice({ items, award, onAttempt }) {

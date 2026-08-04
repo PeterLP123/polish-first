@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CircleHelp, Gauge, Keyboard, Lightbulb, Mic, Pause, Volume2 } from "lucide-react";
-import { similarity } from "../lib/learning.js";
+import { diagnosePronunciation } from "../lib/learning.js";
 import { listenForPolish, speakPolish, speechRecognitionMessage, stopPolishSpeech } from "../lib/speech.js";
 import DiacriticsBar from "./DiacriticsBar.jsx";
 
@@ -60,7 +60,7 @@ export function PronunciationCard({ phrase, onComplete, extended = false }) {
   }, [phrase.id]);
 
   const applyTranscript = (transcripts) => {
-    const scored = transcripts.map((transcript) => ({ transcript, score: similarity(transcript, phrase.polish) }));
+    const scored = transcripts.map((transcript) => ({ transcript, ...diagnosePronunciation(phrase.polish, transcript) }));
     const best = scored.sort((a, b) => b.score - a.score)[0];
     setResult(best);
     setError("");
@@ -133,8 +133,8 @@ export function PronunciationCard({ phrase, onComplete, extended = false }) {
       </form>}
       {result && (
         <div className={`speech-result ${scorePercent >= 70 ? "good" : "retry"}`} role="status">
-          <div className="score-badge">{scorePercent}%</div>
-          <div><strong>{feedback}</strong><span>I heard: “{result.transcript}”</span></div>
+          <div className="score-badge"><strong>{scorePercent}%</strong><span>transcript match</span></div>
+          <div className="speech-result-copy"><strong>{feedback}</strong><span>I heard: “{result.transcript}”</span><p>Automatic checking compares the words transcribed, not your accent.</p>{result.diacriticsOnly && <small>Only Polish marks differ; speech recognition often omits them.</small>}{result.missingWords.length > 0 && <small>Try to make these words clearer: <b lang="pl">{result.missingWords.join(", ")}</b></small>}{result.extraWords.length > 0 && <small>Extra words heard: <b lang="pl">{result.extraWords.join(", ")}</b></small>}</div>
         </div>
       )}
       {error && <p className="speech-error" role="status"><CircleHelp size={16} /> {error}</p>}
