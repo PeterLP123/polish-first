@@ -142,7 +142,22 @@ describe("guided learning flow", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/left untouched/i);
     expect(localStorage.getItem("polish-first-progress")).toBe(unreadable);
     fireEvent.click(screen.getByRole("button", { name: /use fresh progress/i }));
-    await waitFor(() => expect(JSON.parse(localStorage.getItem("polish-first-progress")).version).toBe(6));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem("polish-first-progress")).version).toBe(7));
+  });
+
+  it("previews sample progress without replacing the saved learner record", async () => {
+    const saved = { ...DEFAULT_PROGRESS };
+    localStorage.setItem("polish-first-progress", JSON.stringify(saved));
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /explore sample progress/i }));
+    expect(await screen.findByText(/saved learning record is untouched/i)).toBeInTheDocument();
+    expect(screen.getAllByText("1840").length).toBeGreaterThan(0);
+    expect(JSON.parse(localStorage.getItem("polish-first-progress"))).toEqual(saved);
+
+    fireEvent.click(screen.getByRole("button", { name: /exit demo/i }));
+    expect(await screen.findByText(/learn your first phrases/i)).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("polish-first-progress"))).toEqual(saved);
   });
 
   it("re-reads and restores existing progress after a transient storage read failure", async () => {

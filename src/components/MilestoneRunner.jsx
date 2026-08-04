@@ -8,7 +8,7 @@ import DiacriticsBar from "./DiacriticsBar.jsx";
 
 const SKILLS = { listening: "listening", reading: "reading", grammar: "grammar", builder: "recall", writing: "writing", dialogue: "recall", speaking: "speaking" };
 
-export default function MilestoneRunner({ milestone, onClose, onComplete, onAttempt }) {
+export default function MilestoneRunner({ milestone, assessmentKind = "stage", onClose, onComplete, onAttempt }) {
   const dialogRef = useRef(null);
   const [taskIndex, setTaskIndex] = useState(0);
   const [autoScores, setAutoScores] = useState([]);
@@ -57,7 +57,7 @@ export default function MilestoneRunner({ milestone, onClose, onComplete, onAtte
 
   return <section ref={dialogRef} className="milestone-runner panel" role="dialog" aria-modal="true" aria-label={`${milestone.title} milestone`}>
     <button className="icon-button milestone-close" onClick={onClose} aria-label="Close milestone"><X size={18} /></button>
-    <span className="eyebrow red">SCENARIO READINESS · {milestone.stage.toUpperCase()}</span>
+    <span className="eyebrow red">{assessmentKind === "delayed" ? "DELAYED RETENTION" : "SCENARIO READINESS"} · {milestone.stage.toUpperCase()}</span>
     {!finished ? <>
       <div className="practice-topline"><span>Task {taskIndex + 1} of 10</span><div className="mini-progress"><span style={{ width: `${(taskIndex / 10) * 100}%` }} /></div><span>{task.kind}</span></div>
       <MilestoneTask key={`${milestone.id}-${taskIndex}`} task={task} item={item} onComplete={completeTask} />

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, BookOpen, Brain, Check, FilePenLine, Headphones, Languages, Lightbulb, Mic, RotateCcw, Trophy, Volume2, X } from "lucide-react";
 import { allPhrases, clozeItems, courseTopics, readings, units, writingItems } from "../data/course.js";
-import { buildReviewDeck, scoreCloze, scoreForRating, scoreReading, scoreWriting, shuffled, similarity } from "../lib/learning.js";
+import { buildReviewDeck, nextUnitForProgress, scoreCloze, scoreForRating, scoreReading, scoreWriting, shuffled, similarity } from "../lib/learning.js";
 import { useDrillKeys } from "../lib/drill-keys.js";
 import { speakPolish } from "../lib/speech.js";
 import { AudioButton, PronunciationCard } from "./LearningControls.jsx";
@@ -30,7 +30,7 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
     { id: "writing", label: "Write", icon: FilePenLine, hint: "Controlled replies" },
     { id: "grammar", label: "Grammar", icon: Lightbulb, hint: "Complete the gap" },
   ];
-  const nextUnit = units.find((unit) => !progress.completedUnits.includes(unit.id)) ?? units.at(-1);
+  const nextUnit = nextUnitForProgress(progress);
   const recommendedIds = new Set(buildReviewDeck(progress, 60).map((phrase) => phrase.id));
   progress.learnedPhrases.forEach((id) => recommendedIds.add(id));
   allPhrases.filter((phrase) => phrase.stage === nextUnit.stage).forEach((phrase) => recommendedIds.add(phrase.id));

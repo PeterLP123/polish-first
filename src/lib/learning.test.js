@@ -7,18 +7,22 @@ import {
   addStudy,
   buildDailySession,
   buildReviewDeck,
+  createDemoProgress,
   diagnosticsSummary,
   effectiveStreak,
   getDuePhrases,
   intervalForRating,
   localDate,
   masterySummary,
+  milestoneOverview,
   migrateProgress,
   normalisePolish,
   nextRecommendation,
+  nextUnitForProgress,
   parseProgressImport,
   recordAttempt,
   recordMilestoneResult,
+  recordPlacement,
   ratePhrase,
   scoreCloze,
   scoreReading,
@@ -198,7 +202,7 @@ describe("learning helpers", () => {
   it("round-trips progress exports and migrates older exports", () => {
     const progress = { ...baseProgress(), xp: 42, learnedPhrases: [allPhrases[0].id] };
     const exported = serializeProgress(progress, NOW);
-    expect(parseProgressImport(exported, NOW)).toMatchObject({ version: 6, xp: 42, learnedPhrases: [allPhrases[0].id] });
+    expect(parseProgressImport(exported, NOW)).toMatchObject({ version: 7, xp: 42, learnedPhrases: [allPhrases[0].id] });
     const old = JSON.stringify({ app: "polish-first", schemaVersion: 3, progress: { version: 3, completedUnits: [], learnedPhrases: [allPhrases[0].id], phraseStats: {} } });
     expect(parseProgressImport(old, NOW).phraseStats[allPhrases[0].id].dueDate).toBe("2026-07-14");
   });
@@ -206,7 +210,36 @@ describe("learning helpers", () => {
   it("adds analytics and adaptive memory state without changing older learning state", () => {
     const v4 = { ...baseProgress(), version: 4, xp: 55, completedUnits: [units[0].id], analyticsSince: undefined, skillStats: undefined, dailyStats: undefined, milestoneStats: undefined };
     const migrated = migrateProgress(v4, NOW);
-    expect(migrated).toMatchObject({ version: 6, xp: 55, completedUnits: [units[0].id], analyticsSince: "2026-07-14", skillStats: {}, dailyStats: [], milestoneStats: {} });
+    expect(migrated).toMatchObject({ version: 7, xp: 55, completedUnits: [units[0].id], analyticsSince: "2026-07-14", skillStats: {}, dailyStats: [], milestoneStats: {}, learnerProfile: null, assessmentHistory: [] });
+  });
+
+  it("records placement without marking skipped units complete", () => {
+    const placed = recordPlacement(baseProgress(), { goal: "travel", primaryTopic: "Travel", selfLevel: "some", placementScore: 0.62, startingStage: "A2 bridge" }, NOW);
+    expect(placed.completedUnits).toEqual([]);
+    expect(placed.learnerProfile).toMatchObject({ goal: "travel", primaryTopic: "Travel", startingStage: "A2 bridge", placementScore: 0.62, completedAt: NOW.toISOString() });
+    expect(placed.assessmentHistory).toHaveLength(1);
+    expect(nextUnitForProgress(placed).stage).toBe("A2 bridge");
+    expect(nextRecommendation(placed, NOW)).toMatchObject({ kind: "unit", unitId: nextUnitForProgress(placed).id });
+  });
+
+  it("schedules and clears a delayed retention assessment", () => {
+    const milestone = milestones[0];
+    const stageResult = recordMilestoneResult(baseProgress(), milestone.id, Array(9).fill(0.9), "good", NOW);
+    expect(stageResult.assessmentHistory[0]).toMatchObject({ kind: "stage", followUpDueDate: "2026-07-28" });
+    expect(milestoneOverview(stageResult, new Date(2026, 6, 28, 12))[0].retentionDue).toBe(true);
+    const delayed = recordMilestoneResult(stageResult, milestone.id, Array(9).fill(0.7), "hard", new Date(2026, 6, 28, 12), "delayed");
+    expect(delayed.assessmentHistory.at(-1)).toMatchObject({ kind: "delayed", followUpDueDate: null });
+    expect(milestoneOverview(delayed, new Date(2026, 6, 29, 12))[0].retentionDue).toBe(false);
+  });
+
+  it("builds a validated, non-empty demo record without mutating fresh progress", () => {
+    const fresh = baseProgress();
+    const demo = createDemoProgress(NOW);
+    expect(demo).toMatchObject({ version: PROGRESS_VERSION, xp: 1840, learnerProfile: { goal: "conversation" } });
+    expect(demo.completedUnits.length).toBeGreaterThan(5);
+    expect(demo.learnedPhrases.length).toBeGreaterThan(50);
+    expect(milestoneOverview(demo, NOW)[0].retentionDue).toBe(true);
+    expect(fresh).toEqual(baseProgress());
   });
 
   it("aggregates scored attempts without storing raw events", () => {
@@ -320,5 +353,7 @@ function baseProgress() {
     skillStats: {},
     dailyStats: [],
     milestoneStats: {},
+    learnerProfile: null,
+    assessmentHistory: [],
   };
 }

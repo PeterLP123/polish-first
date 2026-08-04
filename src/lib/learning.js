@@ -1,7 +1,7 @@
 import { ContentCatalog, allPhrases, dialogues, legacyIdMap, milestones, units } from "../data/course.js";
-import { PRACTICE_MODES, SKILL_IDS, STAGES } from "../data/content/schema.js";
+import { PRACTICE_MODES, SKILL_IDS, STAGES, TOPICS } from "../data/content/schema.js";
 
-export const PROGRESS_VERSION = 6;
+export const PROGRESS_VERSION = 7;
 export const PROGRESS_STORAGE_KEY = "polish-first-progress";
 export const RATING_INTERVALS = { again: 0, hard: 1, good: 2, easy: 4 };
 export const SESSION_BUDGETS = {
@@ -29,6 +29,8 @@ export const DEFAULT_PROGRESS = {
   skillStats: {},
   dailyStats: [],
   milestoneStats: {},
+  learnerProfile: null,
+  assessmentHistory: [],
 };
 
 const LEGACY_INTERVALS = [0, 1, 3, 7, 14, 30];
@@ -146,6 +148,14 @@ export function migrateProgress(saved, now = new Date()) {
       ),
     };
   }
+  if ((progress.version ?? 6) < 7) {
+    progress = {
+      ...progress,
+      version: 7,
+      learnerProfile: progress.learnerProfile ?? null,
+      assessmentHistory: progress.assessmentHistory ?? [],
+    };
+  }
   return progress;
 }
 
@@ -160,6 +170,8 @@ function freshProgress(now = new Date()) {
     skillStats: {},
     dailyStats: [],
     milestoneStats: {},
+    learnerProfile: null,
+    assessmentHistory: [],
     analyticsSince: localDate(now),
   };
 }
@@ -296,16 +308,43 @@ export function validateProgress(progress) {
   assertArray(progress.learnedPhrases, "Learned phrases");
   assertArray(progress.studyDates, "Study dates");
   assertArray(progress.dailyStats, "Daily analytics");
+  assertArray(progress.assessmentHistory, "Assessment history");
   assertUnique(progress.completedUnits, "Completed units");
   assertUnique(progress.learnedPhrases, "Learned phrases");
   assertUnique(progress.studyDates, "Study dates");
   for (const date of progress.studyDates) assertDate(date, "Study date");
   if (progress.dailyStats.length > 180) throw new Error("The progress contains too many daily analytics entries.");
+  if (progress.assessmentHistory.length > 120) throw new Error("The progress contains too many assessment entries.");
 
   assertRecord(progress.phraseStats, "Phrase statistics");
   assertRecord(progress.dialogueStats, "Dialogue statistics");
   assertRecord(progress.skillStats, "Skill analytics");
   assertRecord(progress.milestoneStats, "Milestone statistics");
+
+  if (progress.learnerProfile !== null) {
+    assertRecord(progress.learnerProfile, "Learner profile");
+    if (typeof progress.learnerProfile.goal !== "string" || !progress.learnerProfile.goal) throw new Error("The learner goal is not valid.");
+    if (!STAGES.includes(progress.learnerProfile.startingStage)) throw new Error("The learner starting stage is not valid.");
+    if (!TOPICS.includes(progress.learnerProfile.primaryTopic)) throw new Error("The learner topic is not valid.");
+    if (!["new", "some", "returning"].includes(progress.learnerProfile.selfLevel)) throw new Error("The learner self-level is not valid.");
+    assertScore(progress.learnerProfile.placementScore, "Placement score");
+    assertTimestamp(progress.learnerProfile.completedAt, "Placement completion time");
+  }
+
+  const assessmentIds = [];
+  for (const entry of progress.assessmentHistory) {
+    assertRecord(entry, "Assessment entry");
+    if (typeof entry.id !== "string" || !entry.id) throw new Error("An assessment ID is not valid.");
+    assessmentIds.push(entry.id);
+    if (!["placement", "stage", "delayed"].includes(entry.kind)) throw new Error("An assessment kind is not valid.");
+    if (!STAGES.includes(entry.stage)) throw new Error("An assessment stage is not valid.");
+    if (entry.milestoneId !== null && !milestoneIds.has(entry.milestoneId)) throw new Error("The progress contains content IDs this version does not recognise.");
+    assertScore(entry.score, "Assessment score");
+    if (entry.speakingRating !== null && !Object.hasOwn(RATING_SCORES, entry.speakingRating)) throw new Error("An assessment speaking rating is not valid.");
+    assertTimestamp(entry.attemptedAt, "Assessment attempt time");
+    assertDate(entry.followUpDueDate, "Assessment follow-up date", true);
+  }
+  assertUnique(assessmentIds, "Assessment IDs");
 
   const unknownUnits = progress.completedUnits.filter((id) => !unitIds.has(id));
   const unknownPhrases = [
@@ -617,13 +656,25 @@ export function scoreForRating(rating) {
   return RATING_SCORES[rating];
 }
 
-export function recordMilestoneResult(progress, milestoneId, autoScores, speakingRating, now = new Date()) {
+export function recordMilestoneResult(progress, milestoneId, autoScores, speakingRating, now = new Date(), assessmentKind = "stage") {
   if (!milestoneIds.has(milestoneId)) throw new Error(`Unknown milestone: ${milestoneId}`);
   if (!Array.isArray(autoScores) || autoScores.length !== 9 || autoScores.some((score) => !Number.isFinite(score) || score < 0 || score > 1)) throw new Error("Milestones require nine scores between 0 and 1.");
   if (!Object.hasOwn(RATING_SCORES, speakingRating)) throw new Error("A speaking self-rating is required.");
   const current = progress.milestoneStats?.[milestoneId] ?? { attempts: 0, lastAutoScore: 0, bestAutoScore: 0, lastAttempted: null, lastSpeakingRating: null, passedAt: null };
   const mean = Number((autoScores.reduce((sum, score) => sum + score, 0) / autoScores.length).toFixed(4));
   const attemptedAt = now.toISOString();
+  if (!["stage", "delayed"].includes(assessmentKind)) throw new Error("Unknown assessment kind.");
+  const milestone = milestones.find((item) => item.id === milestoneId);
+  const assessment = {
+    id: `${assessmentKind}-${milestoneId}-${attemptedAt}`,
+    kind: assessmentKind,
+    milestoneId,
+    stage: milestone.stage,
+    score: mean,
+    speakingRating,
+    attemptedAt,
+    followUpDueDate: assessmentKind === "stage" ? addDays(localDate(now), 14) : null,
+  };
   return {
     ...progress,
     milestoneStats: {
@@ -637,6 +688,30 @@ export function recordMilestoneResult(progress, milestoneId, autoScores, speakin
         passedAt: current.passedAt ?? (mean >= 0.8 && speakingRating !== "again" ? attemptedAt : null),
       },
     },
+    assessmentHistory: [...(progress.assessmentHistory ?? []).slice(-119), assessment],
+  };
+}
+
+export function recordPlacement(progress, profile, now = new Date()) {
+  if (!profile || !STAGES.includes(profile.startingStage) || !TOPICS.includes(profile.primaryTopic)) throw new Error("Placement profile is not valid.");
+  const completedAt = now.toISOString();
+  const placementScore = clamp(Number(profile.placementScore), 0, 1);
+  const learnerProfile = { ...profile, placementScore, completedAt };
+  const assessment = {
+    id: `placement-${completedAt}`,
+    kind: "placement",
+    milestoneId: null,
+    stage: profile.startingStage,
+    score: placementScore,
+    speakingRating: null,
+    attemptedAt: completedAt,
+    followUpDueDate: null,
+  };
+  return {
+    ...progress,
+    learnerProfile,
+    activeSession: null,
+    assessmentHistory: [...(progress.assessmentHistory ?? []).slice(-119), assessment],
   };
 }
 
@@ -704,6 +779,25 @@ export function masterySummary(progress, now = new Date()) {
   return { due, learning, mastered };
 }
 
+export function nextUnitForProgress(progress) {
+  const startStage = progress.learnerProfile?.startingStage ?? STAGES[0];
+  const startIndex = Math.max(0, STAGES.indexOf(startStage));
+  const atOrAfterStart = units.find((unit) => STAGES.indexOf(unit.stage) >= startIndex && !progress.completedUnits.includes(unit.id));
+  return atOrAfterStart ?? units.find((unit) => !progress.completedUnits.includes(unit.id)) ?? units.at(-1);
+}
+
+function unitsFromFrontier(progress) {
+  const frontier = nextUnitForProgress(progress);
+  const frontierIndex = Math.max(0, units.findIndex((unit) => unit.id === frontier.id));
+  const rotated = [...units.slice(frontierIndex), ...units.slice(0, frontierIndex)];
+  const primaryTopic = progress.learnerProfile?.primaryTopic;
+  if (!primaryTopic) return rotated;
+  return rotated
+    .map((unit, index) => ({ unit, index, preferred: unit.stage === frontier.stage && unit.topic === primaryTopic ? 0 : 1 }))
+    .sort((left, right) => left.preferred - right.preferred || left.index - right.index)
+    .map(({ unit }) => unit);
+}
+
 function stableScore(value) {
   let score = 0;
   for (const char of value) score = (score * 31 + char.charCodeAt(0)) >>> 0;
@@ -757,7 +851,9 @@ export function adaptiveReviewMode(progress, phrase, index = 0) {
 export function buildDailySession(progress, now = new Date()) {
   const date = localDate(now);
   const budget = SESSION_BUDGETS[progress.dailyGoal] ?? SESSION_BUDGETS[15];
-  const unseen = allPhrases.filter((phrase) => !progress.learnedPhrases.includes(phrase.id));
+  const unseen = unitsFromFrontier(progress)
+    .flatMap((unit) => unit.phrases)
+    .filter((phrase) => !progress.learnedPhrases.includes(phrase.id));
   const newPhrases = unseen.slice(0, budget.newCount);
   const due = getDuePhrases(progress, now);
   const dueIds = new Set(due.map((phrase) => phrase.id));
@@ -776,7 +872,7 @@ export function buildDailySession(progress, now = new Date()) {
     ? Array.from({ length: reinforcementSlots }, (_, index) => ({ phrase: newPhrases[index % newPhrases.length], reinforcement: true }))
     : [];
   const reviewEntries = [...dueReviews, ...fallbackReviews, ...newReinforcement];
-  const nextUnit = units.find((unit) => !progress.completedUnits.includes(unit.id)) ?? units.at(-1);
+  const nextUnit = nextUnitForProgress(progress);
   const currentStageIndex = Math.max(0, STAGES.indexOf(nextUnit.stage));
   const eligibleDialogues = dialogues.filter((item) => STAGES.indexOf(item.stage) <= currentStageIndex);
   const dialogue = [...eligibleDialogues].sort((left, right) => {
@@ -973,12 +1069,17 @@ export function dueForecast(progress, days = 7, now = new Date()) {
   });
 }
 
-export function milestoneOverview(progress) {
+export function milestoneOverview(progress, now = new Date()) {
+  const today = localDate(now);
   return milestones.map((milestone) => {
     const stageUnits = units.filter((unit) => unit.stage === milestone.stage);
     const ready = stageUnits.length > 0 && stageUnits.every((unit) => progress.completedUnits.includes(unit.id));
     const result = progress.milestoneStats?.[milestone.id] ?? null;
-    return { ...milestone, ready, passed: Boolean(result?.passedAt), result };
+    const stageAttempts = (progress.assessmentHistory ?? []).filter((entry) => entry.milestoneId === milestone.id && entry.kind === "stage");
+    const latestStage = stageAttempts.at(-1) ?? null;
+    const delayedAfterLatest = latestStage && (progress.assessmentHistory ?? []).some((entry) => entry.milestoneId === milestone.id && entry.kind === "delayed" && entry.attemptedAt > latestStage.attemptedAt);
+    const retentionDue = Boolean(latestStage?.followUpDueDate && latestStage.followUpDueDate <= today && !delayedAfterLatest);
+    return { ...milestone, ready, passed: Boolean(result?.passedAt), result, retentionDue, latestStage };
   });
 }
 
@@ -997,12 +1098,51 @@ export function nextRecommendation(progress, now = new Date()) {
   const weak = rankSkills(skills.filter((skill) => skill.attempts >= 5 && skill.mean < 0.7))[0];
   if (weak) return { kind: "practice", mode: SKILL_MODE[weak.skill], topic: "All", reason: `${weak.skill} is your clearest focus area from recent evidence.` };
 
-  const incomplete = units.find((unit) => !progress.completedUnits.includes(unit.id));
+  const incomplete = progress.completedUnits.length < units.length ? nextUnitForProgress(progress) : null;
   if (incomplete) return { kind: "unit", unitId: incomplete.id, reason: `Continue with Unit ${incomplete.number}: ${incomplete.title}.` };
 
   const practised = rankSkills(skills.filter((skill) => skill.attempts > 0));
   if (practised.length) return { kind: "practice", mode: SKILL_MODE[practised[0].skill], topic: "All", reason: `Keep strengthening your least-practised skill: ${practised[0].skill}.` };
   return { kind: "practice", mode: "flashcards", topic: "All", reason: "Keep the complete course fresh with mixed recall." };
+}
+
+export function createDemoProgress(now = new Date()) {
+  const today = localDate(now);
+  const completedUnits = units.slice(0, 12).map((unit) => unit.id);
+  const learned = units.slice(0, 13).flatMap((unit) => unit.phrases).slice(0, 120);
+  const phraseStats = Object.fromEntries(learned.map((phrase, index) => [phrase.id, {
+    intervalDays: [0, 2, 5, 14, 30][index % 5],
+    difficulty: Number((0.3 + (index % 6) * 0.1).toFixed(2)),
+    dueDate: addDays(today, index % 5 === 0 ? -1 : (index % 5) + 1),
+    lastReviewed: addDays(today, -(index % 8) - 1),
+    reviews: 2 + (index % 9),
+    lapses: index % 4 === 0 ? 1 : 0,
+    lastRating: ["again", "hard", "good", "easy"][index % 4],
+  }]));
+  const skillStats = Object.fromEntries(learned.slice(0, 36).map((phrase, index) => [phrase.id, {
+    recall: { attempts: 4, points: 2.6 + (index % 3) * 0.4, lastScore: 0.8, lastAttempted: addDays(today, -(index % 5)) + "T12:00:00.000Z" },
+    listening: { attempts: 3, points: 1.2 + (index % 2) * 0.6, lastScore: index % 2 ? 0.8 : 0.5, lastAttempted: addDays(today, -(index % 4)) + "T12:00:00.000Z" },
+    speaking: { attempts: 3, points: 2.1 + (index % 2) * 0.3, lastScore: 0.8, lastAttempted: addDays(today, -(index % 6)) + "T12:00:00.000Z" },
+  }]));
+  const attemptedAt = new Date(now.getTime() - 16 * 86_400_000).toISOString();
+  const milestone = milestones[0];
+  return validateProgress({
+    ...freshProgress(now),
+    xp: 1840,
+    streak: 9,
+    lastStudyDate: today,
+    completedUnits,
+    learnedPhrases: learned.map((phrase) => phrase.id),
+    studyDates: Array.from({ length: 9 }, (_, index) => addDays(today, index - 8)),
+    phraseStats,
+    skillStats,
+    todayMinutes: 8,
+    totalReviews: 286,
+    learnerProfile: { goal: "conversation", startingStage: "Starter", primaryTopic: "Social", selfLevel: "some", placementScore: 0.4, completedAt: new Date(now.getTime() - 30 * 86_400_000).toISOString() },
+    milestoneStats: { [milestone.id]: { attempts: 1, lastAutoScore: 0.84, bestAutoScore: 0.84, lastAttempted: attemptedAt, lastSpeakingRating: "good", passedAt: attemptedAt } },
+    assessmentHistory: [{ id: `stage-${milestone.id}-${attemptedAt}`, kind: "stage", milestoneId: milestone.id, stage: milestone.stage, score: 0.84, speakingRating: "good", attemptedAt, followUpDueDate: addDays(localDate(new Date(attemptedAt)), 14) }],
+    dailyStats: Array.from({ length: 14 }, (_, index) => ({ date: addDays(today, index - 13), minutes: 8 + (index % 4) * 3, newItems: index % 3, reviews: 6 + index % 5, skills: { recall: { attempts: 4, points: 2.4 + (index % 3) * 0.5 } } })),
+  });
 }
 
 export function similarity(a, b) {

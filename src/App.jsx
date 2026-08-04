@@ -19,7 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { allPhrases, units } from "./data/course.js";
-import { addStudy, buildDailySession, currentSession, effectiveStreak, getDuePhrases, loadProgressResult, localDate, masterySummary, recordAttempt, recordDialogue, recordMilestoneResult, saveProgress, scoreForRating, todayMinutes } from "./lib/learning.js";
+import { addStudy, buildDailySession, createDemoProgress, currentSession, effectiveStreak, getDuePhrases, loadProgressResult, localDate, masterySummary, nextUnitForProgress, recordAttempt, recordDialogue, recordMilestoneResult, recordPlacement, saveProgress, scoreForRating, todayMinutes } from "./lib/learning.js";
 import { viewFromHash } from "./lib/navigation.js";
 import { listenForPolish, speakPolish, speechRecognitionMessage } from "./lib/speech.js";
 import { applyTheme, getInitialTheme } from "./lib/theme.js";
@@ -27,6 +27,7 @@ import { AudioButton, PronunciationCard } from "./components/LearningControls.js
 import AppIcon from "./components/AppIcon.jsx";
 import { BottomNav, MobileHeader, NAV_ITEMS, Sidebar } from "./components/Navigation.jsx";
 import ProgressRing from "./components/ProgressRing.jsx";
+import PlacementCheck from "./components/PlacementCheck.jsx";
 
 const CourseView = lazy(() => import("./components/CourseView.jsx"));
 const DialoguesPage = lazy(() => import("./components/DialoguesView.jsx"));
@@ -55,8 +56,8 @@ function StatPill({ icon: Icon, value, label, tone }) {
   );
 }
 
-function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal, onStartSession }) {
-  const nextUnit = units.find((unit) => !progress.completedUnits.includes(unit.id)) || units[units.length - 1];
+function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal, onStartSession, onOpenPlacement, onStartDemo, demoMode = false }) {
+  const nextUnit = nextUnitForProgress(progress);
   const coursePercent = Math.round((progress.completedUnits.length / units.length) * 100);
   const minutesToday = todayMinutes(progress);
   const dailyPercent = Math.round((minutesToday / progress.dailyGoal) * 100);
@@ -122,7 +123,11 @@ function HomeView({ progress, onNavigate, onOpenUnit, award, onSetGoal, onStartS
             <span className="mastery-teaser-icon" aria-hidden="true"><Brain size={21} /></span>
             <div><strong>Phrases you learn come back right before you would forget them.</strong><span>First review tomorrow, then two days, then longer. A 30-day gap counts as mastered.</span></div>
           </div>
-          <button className="secondary-button" onClick={onStartSession}>Learn your first phrases <ArrowRight size={16} /></button>
+          <div className="mastery-actions">
+            <button className="secondary-button" onClick={onStartSession}>Learn your first phrases <ArrowRight size={16} /></button>
+            {!demoMode && <button className="secondary-button" onClick={onOpenPlacement}>Take the 90-second placement</button>}
+            {!demoMode && <button className="text-button" onClick={onStartDemo}>Explore sample progress</button>}
+          </div>
         </section>
       ) : (
         <section className="mastery-strip panel" aria-label="Memory progress">
@@ -306,6 +311,8 @@ function App() {
   const [route, setRoute] = useState(() => viewFromHash(window.location.hash));
   const view = route.view;
   const [progress, setProgress] = useState(initialLoad.progress);
+  const [demoProgress, setDemoProgress] = useState(null);
+  const [placementOpen, setPlacementOpen] = useState(false);
   const [storageRecoveryRequired, setStorageRecoveryRequired] = useState(initialLoad.recoveryRequired);
   const [storageIssue, setStorageIssue] = useState(() => initialLoad.recoveryRequired ? {
     kind: initialLoad.status === "recovery" ? "recovery" : "save",
@@ -319,6 +326,11 @@ function App() {
   const [toast, setToast] = useState("");
   const toastTimerRef = useRef(null);
   const mainRef = useRef(null);
+  const activeProgress = demoProgress ?? progress;
+  const updateProgress = (updater) => {
+    if (demoProgress) setDemoProgress((current) => typeof updater === "function" ? updater(current) : updater);
+    else setProgress(updater);
+  };
 
   useEffect(() => {
     if (storageRecoveryRequired) return;
@@ -411,6 +423,7 @@ function App() {
   const replaceProgress = (nextProgress) => {
     setStorageRecoveryRequired(false);
     setStorageIssue(null);
+    setDemoProgress(null);
     setProgress(nextProgress);
   };
 
@@ -421,7 +434,7 @@ function App() {
   };
 
   const award = (payload, message) => {
-    setProgress((current) => addStudy(current, payload));
+    updateProgress((current) => addStudy(current, payload));
     showToast(message);
   };
 
@@ -441,7 +454,7 @@ function App() {
   };
 
   const startSession = (forceNew = false) => {
-    setProgress((current) => ({
+    updateProgress((current) => ({
       ...current,
       activeSession: !forceNew && current.activeSession?.date === localDate() ? current.activeSession : buildDailySession(current),
     }));
@@ -449,7 +462,7 @@ function App() {
   };
 
   const commitSessionTask = (task, result) => {
-    setProgress((current) => {
+    updateProgress((current) => {
       let next = current;
       if (result.kind === "learn") {
         next = addStudy(next, { xp: result.xp, minutes: result.minutes, phraseId: task.phraseId, introduction: true });
@@ -490,50 +503,70 @@ function App() {
   };
 
   const completeDialogue = (dialogueId, mistakes) => {
-    setProgress((current) => recordDialogue(addStudy(current, { xp: 20, minutes: 1 }), dialogueId, mistakes));
+    updateProgress((current) => recordDialogue(addStudy(current, { xp: 20, minutes: 1 }), dialogueId, mistakes));
     showToast(`Scene complete · ${mistakes ? `${mistakes} useful ${mistakes === 1 ? "retry" : "retries"}` : "no retries"}`);
   };
 
   const recordPracticeAttempt = (itemId, skill, mode, score) => {
-    setProgress((current) => recordAttempt(current, { itemId, skill, mode, score, occurredAt: new Date().toISOString() }));
+    updateProgress((current) => recordAttempt(current, { itemId, skill, mode, score, occurredAt: new Date().toISOString() }));
   };
 
-  const completeMilestone = (milestoneId, autoScores, speakingRating) => {
-    setProgress((current) => recordMilestoneResult(current, milestoneId, autoScores, speakingRating));
-    showToast("Scenario check saved");
+  const completeMilestone = (milestoneId, autoScores, speakingRating, assessmentKind = "stage") => {
+    updateProgress((current) => recordMilestoneResult(current, milestoneId, autoScores, speakingRating, new Date(), assessmentKind));
+    showToast(assessmentKind === "delayed" ? "Delayed retention check saved" : "Scenario check saved");
+  };
+
+  const completePlacement = (profile) => {
+    updateProgress((current) => recordPlacement(current, profile));
+    setPlacementOpen(false);
+    showToast(`Path starts at ${profile.startingStage}`);
+  };
+
+  const enterDemo = () => {
+    setPlacementOpen(false);
+    setDemoProgress(createDemoProgress());
+    showToast("Sample progress loaded without changing your saved record");
+  };
+
+  const exitDemo = () => {
+    setDemoProgress(null);
+    navigate("home");
+    showToast("Back to your own progress");
   };
 
   const currentLabel = view === "session" ? "Daily session" : NAV_ITEMS.find((item) => item.id === view)?.label;
-  const dueCount = getDuePhrases(progress).length;
+  const dueCount = getDuePhrases(activeProgress).length;
   const focusMode = view === "session";
 
   return (
     <>
     <a className="skip-link" href="#main-content" onClick={skipToContent}>Skip to main content</a>
     <div className={`app-shell ${focusMode ? "learning-mode" : ""}`}>
-      {!focusMode && <Sidebar view={view} progress={progress} dueCount={dueCount} onNavigate={navigate} theme={theme} onToggleTheme={toggleTheme} />}
+      {!focusMode && <Sidebar view={view} progress={activeProgress} dueCount={dueCount} onNavigate={navigate} theme={theme} onToggleTheme={toggleTheme} />}
 
       <div className={`app-main ${focusMode ? "focus-mode" : ""}`}>
-        {!focusMode && <MobileHeader label={currentLabel} xp={progress.xp} theme={theme} onToggleTheme={toggleTheme} />}
-        {storageIssue && <div className="storage-alert" role="alert"><CircleHelp size={18} /><span><strong>Local progress needs attention</strong>{storageIssue.message}</span><button className="secondary-button" onClick={retryLocalSave}>{storageIssue.kind === "recovery" ? "Use fresh progress" : "Try saving again"}</button></div>}
+        {!focusMode && <MobileHeader label={currentLabel} xp={activeProgress.xp} theme={theme} onToggleTheme={toggleTheme} />}
+        {demoProgress && <div className="demo-banner" role="status"><span><strong>Sample progress</strong>Your saved learning record is untouched.</span><button className="secondary-button" onClick={exitDemo}>Exit demo</button></div>}
+        {!demoProgress && storageIssue && <div className="storage-alert" role="alert"><CircleHelp size={18} /><span><strong>Local progress needs attention</strong>{storageIssue.message}</span><button className="secondary-button" onClick={retryLocalSave}>{storageIssue.kind === "recovery" ? "Use fresh progress" : "Try saving again"}</button></div>}
         <main id="main-content" className="content" ref={mainRef} tabIndex={-1}>
           <Suspense fallback={<div className="route-loading" role="status">Loading this section…</div>}>
             <FocusWhenReady routeKey={view} mainRef={mainRef}>
-              {view === "home" && <HomeView progress={progress} onNavigate={navigate} onOpenUnit={openUnit} award={award} onSetGoal={(minutes) => setProgress((current) => ({ ...current, dailyGoal: minutes }))} onStartSession={() => startSession(false)} />}
-              {view === "session" && <GuidedSession session={progress.activeSession} onCommit={commitSessionTask} onExit={() => navigate("home")} onRestart={() => startSession(true)} upcomingDue={getDuePhrases(progress).length} />}
-              {view === "course" && <CourseView progress={progress} onOpenUnit={openUnit} />}
-              {view === "practice" && <PracticePage progress={progress} award={award} onAttempt={recordPracticeAttempt} initialMode={route.practice.mode} initialTopic={route.practice.topic} />}
+              {view === "home" && <HomeView progress={activeProgress} onNavigate={navigate} onOpenUnit={openUnit} award={award} onSetGoal={(minutes) => updateProgress((current) => ({ ...current, dailyGoal: minutes }))} onStartSession={() => startSession(false)} onOpenPlacement={() => setPlacementOpen(true)} onStartDemo={enterDemo} demoMode={Boolean(demoProgress)} />}
+              {view === "session" && <GuidedSession session={activeProgress.activeSession} onCommit={commitSessionTask} onExit={() => navigate("home")} onRestart={() => startSession(true)} upcomingDue={getDuePhrases(activeProgress).length} />}
+              {view === "course" && <CourseView progress={activeProgress} onOpenUnit={openUnit} />}
+              {view === "practice" && <PracticePage progress={activeProgress} award={award} onAttempt={recordPracticeAttempt} initialMode={route.practice.mode} initialTopic={route.practice.topic} />}
               {view === "sounds" && <SoundsView award={award} />}
-              {view === "dialogues" && <DialoguesPage progress={progress} onCorrect={() => award({ xp: 10, minutes: 1 }, "+10 XP · Natural response")} onCompleteDialogue={completeDialogue} />}
+              {view === "dialogues" && <DialoguesPage progress={activeProgress} onCorrect={() => award({ xp: 10, minutes: 1 }, "+10 XP · Natural response")} onCompleteDialogue={completeDialogue} />}
               {view === "grammar" && <GrammarView onNavigate={navigate} />}
-              {view === "data" && <ProgressDataView progress={progress} onReplaceProgress={replaceProgress} onNavigatePractice={(mode, topic) => navigate("practice", { mode, topic })} onOpenUnit={openUnit} onCompleteMilestone={completeMilestone} onAttempt={recordPracticeAttempt} />}
+              {view === "data" && <ProgressDataView progress={activeProgress} onReplaceProgress={replaceProgress} onNavigatePractice={(mode, topic) => navigate("practice", { mode, topic })} onOpenUnit={openUnit} onCompleteMilestone={completeMilestone} onAttempt={recordPracticeAttempt} />}
             </FocusWhenReady>
           </Suspense>
         </main>
       </div>
 
-      {!focusMode && <BottomNav view={view} dueCount={dueCount} progress={progress} onNavigate={navigate} />}
-      {activeUnit && <UnitLesson unit={activeUnit} progress={progress} onClose={() => setActiveUnit(null)} award={award} returnFocus={unitTriggerRef.current} />}
+      {!focusMode && <BottomNav view={view} dueCount={dueCount} progress={activeProgress} onNavigate={navigate} />}
+      {activeUnit && <UnitLesson unit={activeUnit} progress={activeProgress} onClose={() => setActiveUnit(null)} award={award} returnFocus={unitTriggerRef.current} />}
+      {placementOpen && <PlacementCheck onComplete={completePlacement} onClose={() => setPlacementOpen(false)} />}
       {updateReady && (
         <div className="update-banner" role="alert">
           <span><strong>A fresh version is ready</strong>Reload to pick up the latest lessons and fixes.</span>

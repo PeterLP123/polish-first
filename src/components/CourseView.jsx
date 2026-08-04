@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowRight, Check, ChevronRight, GraduationCap, Headphones, Play, Search } from "lucide-react";
 import { allPhrases, courseTopics, units } from "../data/course.js";
+import { nextUnitForProgress } from "../lib/learning.js";
 import AppIcon from "./AppIcon.jsx";
 import ProgressRing from "./ProgressRing.jsx";
 
@@ -33,7 +34,7 @@ const COURSE_STAGES = [...new Set(units.map((unit) => unit.stage))];
 export default function CourseView({ progress, onOpenUnit }) {
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("All");
-  const nextUnit = units.find((unit) => !progress.completedUnits.includes(unit.id)) || units[units.length - 1];
+  const nextUnit = nextUnitForProgress(progress);
   const [openStages, setOpenStages] = useState(() => new Set([nextUnit.stage]));
   const [showChip, setShowChip] = useState(false);
   const [highlightId, setHighlightId] = useState(null);
