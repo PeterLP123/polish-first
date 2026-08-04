@@ -1,3 +1,5 @@
+import { reviewedAudioForText } from "../data/audio-manifest.js";
+
 const POLISH_LANGUAGE = "pl-PL";
 const LISTENING_TIMEOUT_MS = 12_000;
 const VOICE_PREFERENCE_KEY = "czesc-polish-voice";
@@ -5,6 +7,8 @@ const VOICE_PREFERENCE_KEY = "czesc-polish-voice";
 let cachedPolishVoice = null;
 let activeUtterance = null;
 let cancelActiveUtterance = null;
+let activeAudio = null;
+let cancelActiveAudio = null;
 let sessionVoicePreference = null;
 
 function synthesis() {
@@ -60,25 +64,35 @@ if (synthesis()) {
 
 export function stopPolishSpeech() {
   const engine = synthesis();
-  if (!engine) return false;
-  const finish = cancelActiveUtterance;
+  const finishUtterance = cancelActiveUtterance;
+  const finishAudio = cancelActiveAudio;
+  const audio = activeAudio;
   activeUtterance = null;
   cancelActiveUtterance = null;
-  engine.cancel();
-  finish?.();
-  return true;
+  activeAudio = null;
+  cancelActiveAudio = null;
+  engine?.cancel?.();
+  audio?.pause?.();
+  if (audio) audio.currentTime = 0;
+  finishUtterance?.();
+  finishAudio?.();
+  return Boolean(engine || audio);
 }
 
 export function speakPolish(text, rateOrOptions = 0.82) {
-  const engine = synthesis();
-  const Utterance = typeof window !== "undefined" ? window.SpeechSynthesisUtterance : null;
-  if (!engine || !Utterance || !String(text ?? "").trim()) return false;
-
+  const cleanText = String(text ?? "").trim();
+  if (!cleanText) return false;
   const options = typeof rateOrOptions === "number" ? { rate: rateOrOptions } : (rateOrOptions ?? {});
   const rate = Math.min(1.2, Math.max(0.5, Number(options.rate) || 0.82));
+  const reviewedAudio = reviewedAudioForText(cleanText);
+  if (reviewedAudio && playReviewedAudio(reviewedAudio, rate, options)) return true;
+
+  const engine = synthesis();
+  const Utterance = typeof window !== "undefined" ? window.SpeechSynthesisUtterance : null;
+  if (!engine || !Utterance) return false;
 
   stopPolishSpeech();
-  const utterance = new Utterance(String(text).trim());
+  const utterance = new Utterance(cleanText);
   utterance.lang = POLISH_LANGUAGE;
   utterance.rate = rate;
   utterance.pitch = 1;
@@ -113,6 +127,42 @@ export function speakPolish(text, rateOrOptions = 0.82) {
   if (engine.paused) engine.resume?.();
   engine.speak(utterance);
   return true;
+}
+
+function playReviewedAudio(entry, rate, options) {
+  const AudioPlayer = typeof window !== "undefined" ? window.Audio : null;
+  if (!AudioPlayer) return false;
+  stopPolishSpeech();
+  const audio = new AudioPlayer(entry.src);
+  audio.preload = "auto";
+  audio.playbackRate = Math.min(1.25, Math.max(0.65, rate / 0.82));
+  let settled = false;
+  const finish = (kind, error = null) => {
+    if (settled) return;
+    settled = true;
+    if (activeAudio === audio) {
+      activeAudio = null;
+      cancelActiveAudio = null;
+    }
+    if (kind === "error") options.onError?.(error ?? "reviewed-audio-failed");
+    else options.onEnd?.();
+  };
+  audio.onplay = () => { if (activeAudio === audio) options.onStart?.(); };
+  audio.onended = () => finish("end");
+  audio.onerror = () => finish("error", "reviewed-audio-failed");
+  activeAudio = audio;
+  cancelActiveAudio = () => finish("end");
+  try {
+    audio.play()?.catch?.(() => finish("error", "reviewed-audio-blocked"));
+  } catch {
+    finish("error", "reviewed-audio-failed");
+    return false;
+  }
+  return true;
+}
+
+export function polishAudioSource(text) {
+  return reviewedAudioForText(text) ? "reviewed-recording" : "device-voice";
 }
 
 export function supportsSpeechRecognition() {

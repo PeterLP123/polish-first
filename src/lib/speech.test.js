@@ -97,7 +97,8 @@ describe("Polish speech controls", () => {
 
   it("provides actionable mobile fallbacks for microphone errors", async () => {
     installSynthesis();
-    const { speechRecognitionMessage } = await import("./speech.js");
+    const { polishAudioSource, speechRecognitionMessage } = await import("./speech.js");
+    expect(polishAudioSource("Dzień dobry")).toBe("device-voice");
     expect(speechRecognitionMessage("not-allowed")).toMatch(/browser settings.*phone dictation/i);
     expect(speechRecognitionMessage("audio-capture")).toMatch(/no microphone.*phone dictation/i);
     expect(speechRecognitionMessage("no-speech")).toMatch(/didn't catch/i);

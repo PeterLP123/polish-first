@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CircleHelp, Gauge, Keyboard, Lightbulb, Mic, Pause, Volume2 } from "lucide-react";
 import { diagnosePronunciation } from "../lib/learning.js";
-import { listenForPolish, speakPolish, speechRecognitionMessage, stopPolishSpeech } from "../lib/speech.js";
+import { listenForPolish, polishAudioSource, speakPolish, speechRecognitionMessage, stopPolishSpeech } from "../lib/speech.js";
 import DiacriticsBar from "./DiacriticsBar.jsx";
 
 export function AudioButton({ text, label = "Hear Polish", compact = false, rate = 0.82 }) {
@@ -27,11 +27,12 @@ export function AudioButton({ text, label = "Hear Polish", compact = false, rate
     playingRef.current = started;
     setPlaying(started);
   };
+  const sourceLabel = label === "Hear Polish" ? (polishAudioSource(text) === "reviewed-recording" ? "Native recording" : "Device Polish voice") : label;
 
   return (
-    <button type="button" className={compact ? "icon-button" : "audio-button"} onClick={play} aria-pressed={playing} aria-label={`${playing ? "Stop" : label}: ${text}`}>
+    <button type="button" className={compact ? "icon-button" : "audio-button"} onClick={play} aria-pressed={playing} aria-label={`${playing ? "Stop" : sourceLabel}: ${text}`}>
       {playing ? <Pause size={compact ? 17 : 18} /> : <Volume2 size={compact ? 17 : 18} />}
-      {!compact && <span>{playing ? "Stop audio" : label}</span>}
+      {!compact && <span>{playing ? "Stop audio" : sourceLabel}</span>}
     </button>
   );
 }

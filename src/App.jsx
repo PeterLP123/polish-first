@@ -227,7 +227,7 @@ function UnitLesson({ unit, progress, onClose, award, returnFocus }) {
           <span className="lesson-count">{index + 1} / {unit.phrases.length}</span>
         </header>
         <div className="lesson-main">
-          <div className="lesson-prompt"><span className="eyebrow red">LISTEN · READ · REPEAT</span><h1>Say it like you mean it</h1><p>Hear the natural Polish, use the sound guide, then speak it aloud.</p></div>
+          <div className="lesson-prompt"><span className="eyebrow red">LISTEN · READ · REPEAT</span><h1>Say it like you mean it</h1><p>Hear the labelled Polish audio source, use the sound guide, then speak it aloud.</p></div>
           <article className="learning-card">
             <div className="learning-card-audio"><AudioButton text={phrase.polish} compact /><span>Tap to hear it</span></div>
             <div className="learning-phrase"><h2 lang="pl">{phrase.polish}</h2><p className="phonetic large">{phrase.phonetic}</p></div>

@@ -38,6 +38,10 @@ export function validateContentCatalog(catalog, expected = {}) {
     }
   }
 
+  for (const phrase of catalog.phrases ?? []) {
+    if (!phrase.polish || !phrase.english || !phrase.phonetic) errors.push(`${phrase.id}: missing Polish, English, or phonetic text`);
+  }
+
   for (const reading of catalog.readings ?? []) {
     if (!reading.text || reading.questions?.length < 2 || reading.questions.length > 4) errors.push(`${reading.id}: invalid reading`);
     for (const question of reading.questions ?? []) {
