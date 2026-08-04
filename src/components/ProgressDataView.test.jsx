@@ -28,7 +28,7 @@ describe("progress data tools", () => {
     expect(await screen.findByRole("heading", { name: /replace current progress/i })).toBeInTheDocument();
     expect(screen.getByText(/123 XP/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /confirm import/i }));
-    expect(onReplace).toHaveBeenCalledWith(expect.objectContaining({ xp: 123, version: 5 }));
+    expect(onReplace).toHaveBeenCalledWith(expect.objectContaining({ xp: 123, version: 6 }));
   });
 
   it("rejects invalid files without replacing progress", async () => {

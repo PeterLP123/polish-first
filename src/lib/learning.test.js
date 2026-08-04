@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   PROGRESS_VERSION,
   SESSION_BUDGETS,
+  adaptiveReviewMode,
   addDays,
   addStudy,
   buildDailySession,
@@ -83,16 +84,16 @@ describe("learning helpers", () => {
     expect(intervalForRating(0, "hard")).toBe(1);
     expect(intervalForRating(0, "good")).toBe(2);
     expect(intervalForRating(0, "easy")).toBe(4);
-    expect(intervalForRating(10, "hard")).toBe(12);
-    expect(intervalForRating(10, "good")).toBe(20);
-    expect(intervalForRating(10, "easy")).toBe(30);
+    expect(intervalForRating(10, "hard")).toBe(11);
+    expect(intervalForRating(10, "good")).toBe(19);
+    expect(intervalForRating(10, "easy")).toBe(29);
     expect(intervalForRating(60, "easy")).toBe(90);
   });
 
   it("records ratings, reviews, lapses, and learned status", () => {
     const id = allPhrases[0].id;
     let progress = ratePhrase(baseProgress(), id, "good", NOW);
-    expect(progress.phraseStats[id]).toMatchObject({ intervalDays: 2, dueDate: "2026-07-16", reviews: 1, lapses: 0, lastRating: "good" });
+    expect(progress.phraseStats[id]).toMatchObject({ intervalDays: 2, difficulty: 0.47, dueDate: "2026-07-16", reviews: 1, lapses: 0, lastRating: "good" });
     progress = ratePhrase(progress, id, "again", NOW);
     expect(progress.phraseStats[id]).toMatchObject({ intervalDays: 0, dueDate: "2026-07-14", reviews: 2, lapses: 1, lastRating: "again" });
     expect(progress.learnedPhrases).toContain(id);
@@ -151,6 +152,21 @@ describe("learning helpers", () => {
     expect(dueTask.reinforcement).toBeUndefined();
   });
 
+  it("chooses the weakest evidenced skill instead of rotating modes blindly", () => {
+    const phrase = allPhrases.find((item) => item.polish.split(" ").length >= 3);
+    const progress = {
+      ...baseProgress(),
+      skillStats: {
+        [phrase.id]: {
+          recall: { attempts: 5, points: 4.5, lastScore: 1, lastAttempted: NOW.toISOString() },
+          listening: { attempts: 5, points: 1, lastScore: 0, lastAttempted: NOW.toISOString() },
+          speaking: { attempts: 5, points: 4, lastScore: 0.8, lastAttempted: NOW.toISOString() },
+        },
+      },
+    };
+    expect(adaptiveReviewMode(progress, phrase)).toMatchObject({ mode: "listening", focusSkill: "listening", reason: "weakest-evidence" });
+  });
+
   it("keeps a brand-new learner's guided dialogue at Starter level", () => {
     const session = buildDailySession({ ...baseProgress(), dailyGoal: 15 }, NOW);
     const dialogueTask = session.tasks.find((task) => task.type === "dialogue");
@@ -182,15 +198,15 @@ describe("learning helpers", () => {
   it("round-trips progress exports and migrates older exports", () => {
     const progress = { ...baseProgress(), xp: 42, learnedPhrases: [allPhrases[0].id] };
     const exported = serializeProgress(progress, NOW);
-    expect(parseProgressImport(exported, NOW)).toMatchObject({ version: 5, xp: 42, learnedPhrases: [allPhrases[0].id] });
+    expect(parseProgressImport(exported, NOW)).toMatchObject({ version: 6, xp: 42, learnedPhrases: [allPhrases[0].id] });
     const old = JSON.stringify({ app: "polish-first", schemaVersion: 3, progress: { version: 3, completedUnits: [], learnedPhrases: [allPhrases[0].id], phraseStats: {} } });
     expect(parseProgressImport(old, NOW).phraseStats[allPhrases[0].id].dueDate).toBe("2026-07-14");
   });
 
-  it("adds v5 analytics without changing v4 learning state", () => {
+  it("adds analytics and adaptive memory state without changing older learning state", () => {
     const v4 = { ...baseProgress(), version: 4, xp: 55, completedUnits: [units[0].id], analyticsSince: undefined, skillStats: undefined, dailyStats: undefined, milestoneStats: undefined };
     const migrated = migrateProgress(v4, NOW);
-    expect(migrated).toMatchObject({ version: 5, xp: 55, completedUnits: [units[0].id], analyticsSince: "2026-07-14", skillStats: {}, dailyStats: [], milestoneStats: {} });
+    expect(migrated).toMatchObject({ version: 6, xp: 55, completedUnits: [units[0].id], analyticsSince: "2026-07-14", skillStats: {}, dailyStats: [], milestoneStats: {} });
   });
 
   it("aggregates scored attempts without storing raw events", () => {
@@ -253,7 +269,7 @@ describe("learning helpers", () => {
     const skillStats = Object.fromEntries([...ContentCatalog.byId]
       .filter(([, item]) => item.skills?.length)
       .map(([id, item]) => [id, Object.fromEntries(item.skills.map((skill) => [skill, aggregate]))]));
-    const phraseStats = Object.fromEntries(allPhrases.map((phrase) => [phrase.id, { intervalDays: 90, dueDate: "2026-10-12", lastReviewed: "2026-07-14", reviews: 9999, lapses: 999, lastRating: "easy" }]));
+    const phraseStats = Object.fromEntries(allPhrases.map((phrase) => [phrase.id, { intervalDays: 90, difficulty: 0.2, dueDate: "2026-10-12", lastReviewed: "2026-07-14", reviews: 9999, lapses: 999, lastRating: "easy" }]));
     const dailyStats = Array.from({ length: 180 }, (_, index) => ({
       date: addDays("2026-01-01", index), minutes: 999, newItems: 99, reviews: 999,
       skills: Object.fromEntries(["recall", "listening", "speaking", "reading", "writing", "grammar"].map((skill) => [skill, { attempts: 999, points: 999 }])),
@@ -282,7 +298,7 @@ describe("learning helpers", () => {
 });
 
 function stat(dueDate, intervalDays) {
-  return { intervalDays, dueDate, lastReviewed: "2026-07-01", reviews: 1, lapses: 0, lastRating: "good" };
+  return { intervalDays, difficulty: 0.5, dueDate, lastReviewed: "2026-07-01", reviews: 1, lapses: 0, lastRating: "good" };
 }
 
 function baseProgress() {

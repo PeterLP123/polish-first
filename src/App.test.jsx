@@ -142,7 +142,7 @@ describe("guided learning flow", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/left untouched/i);
     expect(localStorage.getItem("polish-first-progress")).toBe(unreadable);
     fireEvent.click(screen.getByRole("button", { name: /use fresh progress/i }));
-    await waitFor(() => expect(JSON.parse(localStorage.getItem("polish-first-progress")).version).toBe(5));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem("polish-first-progress")).version).toBe(6));
   });
 
   it("re-reads and restores existing progress after a transient storage read failure", async () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_PROGRESS,
+  PROGRESS_VERSION,
   PROGRESS_STORAGE_KEY,
   buildDailySession,
   loadProgressResult,
@@ -28,7 +29,7 @@ function validProgress(overrides = {}) {
 }
 
 function envelope(progress) {
-  return { app: "polish-first", schemaVersion: 5, progress };
+  return { app: "polish-first", schemaVersion: PROGRESS_VERSION, progress };
 }
 
 describe("local progress storage", () => {
@@ -75,6 +76,7 @@ describe("local progress storage", () => {
     const stableId = "shopping-czy-potrzebuje-pan-torbe";
     expect(allPhrases.find((phrase) => phrase.id === stableId)?.polish).toBe("Czy potrzebuje pan torby?");
     const progress = validProgress({
+      version: 5,
       learnedPhrases: [stableId],
       phraseStats: {
         [stableId]: { intervalDays: 2, dueDate: "2026-07-16", lastReviewed: "2026-07-14", reviews: 1, lapses: 0, lastRating: "good" },
@@ -82,8 +84,10 @@ describe("local progress storage", () => {
     });
     const storage = { getItem: vi.fn(() => JSON.stringify(progress)), setItem: vi.fn() };
 
-    expect(loadProgressResult(NOW, storage)).toMatchObject({ status: "loaded", recoveryRequired: false });
-    expect(loadProgressResult(NOW, storage).progress.learnedPhrases).toContain(stableId);
+    const result = loadProgressResult(NOW, storage);
+    expect(result).toMatchObject({ status: "loaded", recoveryRequired: false });
+    expect(result.progress.learnedPhrases).toContain(stableId);
+    expect(result.progress.phraseStats[stableId]).toMatchObject({ intervalDays: 2, difficulty: 0.45 });
   });
 
   it("rejects inherited object keys used as ratings", () => {
@@ -91,7 +95,7 @@ describe("local progress storage", () => {
     const progress = validProgress({
       learnedPhrases: [phrase.id],
       phraseStats: {
-        [phrase.id]: { intervalDays: 1, dueDate: "2026-07-15", lastReviewed: "2026-07-14", reviews: 1, lapses: 0, lastRating: "toString" },
+        [phrase.id]: { intervalDays: 1, difficulty: 0.5, dueDate: "2026-07-15", lastReviewed: "2026-07-14", reviews: 1, lapses: 0, lastRating: "toString" },
       },
     });
     expect(() => parseProgressImport(envelope(progress), NOW)).toThrow(/rating/i);

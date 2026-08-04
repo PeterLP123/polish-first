@@ -1,7 +1,7 @@
 import { ContentCatalog, allPhrases, dialogues, legacyIdMap, milestones, units } from "../data/course.js";
 import { PRACTICE_MODES, SKILL_IDS, STAGES } from "../data/content/schema.js";
 
-export const PROGRESS_VERSION = 5;
+export const PROGRESS_VERSION = 6;
 export const PROGRESS_STORAGE_KEY = "polish-first-progress";
 export const RATING_INTERVALS = { again: 0, hard: 1, good: 2, easy: 4 };
 export const SESSION_BUDGETS = {
@@ -59,6 +59,7 @@ export function addDays(isoDate, days) {
 function emptyPhraseStat(overrides = {}) {
   return {
     intervalDays: 0,
+    difficulty: 0.5,
     dueDate: localDate(),
     lastReviewed: null,
     reviews: 0,
@@ -70,12 +71,17 @@ function emptyPhraseStat(overrides = {}) {
 
 function migratePhraseStat(stat = {}, today = localDate()) {
   if ("intervalDays" in stat) {
-    return emptyPhraseStat({ ...stat, dueDate: stat.dueDate || today });
+    return emptyPhraseStat({
+      ...stat,
+      difficulty: Number.isFinite(stat.difficulty) ? stat.difficulty : Math.min(0.9, 0.45 + (Number(stat.lapses) || 0) * 0.05),
+      dueDate: stat.dueDate || today,
+    });
   }
   const intervalDays = LEGACY_INTERVALS[Math.max(0, Math.min(5, Number(stat.box) || 0))];
   const lastReviewed = stat.last || null;
   return emptyPhraseStat({
     intervalDays,
+    difficulty: 0.5,
     dueDate: lastReviewed ? addDays(lastReviewed, intervalDays) : today,
     lastReviewed,
     reviews: Number(stat.box) || 0,
@@ -128,6 +134,16 @@ export function migrateProgress(saved, now = new Date()) {
       skillStats: progress.skillStats ?? {},
       dailyStats: progress.dailyStats ?? [],
       milestoneStats: progress.milestoneStats ?? {},
+    };
+  }
+  if ((progress.version ?? 5) < 6) {
+    const today = localDate(now);
+    progress = {
+      ...progress,
+      version: 6,
+      phraseStats: Object.fromEntries(
+        Object.entries(progress.phraseStats ?? {}).map(([id, stat]) => [id, migratePhraseStat(stat, today)]),
+      ),
     };
   }
   return progress;
@@ -230,6 +246,8 @@ function validateActiveSession(session) {
     } else if (task.type === "review") {
       if (!phraseById.has(task.phraseId)) throw new Error("The progress contains content IDs this version does not recognise.");
       if (!["flashcard", "listening", "builder", "speaking"].includes(task.mode)) throw new Error("An active session review mode is not valid.");
+      if (task.focusSkill !== undefined && !SKILL_IDS.includes(task.focusSkill)) throw new Error("An active session review focus is not valid.");
+      if (task.reason !== undefined && !["weakest-evidence", "needs-evidence"].includes(task.reason)) throw new Error("An active session review reason is not valid.");
       if (task.reinforcement !== undefined && typeof task.reinforcement !== "boolean") throw new Error("An active session reinforcement flag is not valid.");
     } else if (task.type === "dialogue") {
       if (!dialogueIds.has(task.dialogueId)) throw new Error("The progress contains content IDs this version does not recognise.");
@@ -259,7 +277,7 @@ function validateActiveSession(session) {
 }
 
 /**
- * Validate the complete persisted v5 state. The same contract is used for
+ * Validate the complete persisted v6 state. The same contract is used for
  * browser loads, imports, and saves so a current-version payload cannot bypass
  * checks that migrations receive.
  */
@@ -318,6 +336,7 @@ export function validateProgress(progress) {
   for (const [id, stat] of Object.entries(progress.phraseStats)) {
     assertRecord(stat, `Phrase statistics for ${id}`);
     assertNonNegativeInteger(stat.intervalDays, `Review interval for ${id}`, 90);
+    if (!Number.isFinite(stat.difficulty) || stat.difficulty < 0 || stat.difficulty > 1) throw new Error(`Memory difficulty for ${id} is not valid.`);
     assertDate(stat.dueDate, `Due date for ${id}`);
     assertDate(stat.lastReviewed, `Last review date for ${id}`, true);
     assertNonNegativeInteger(stat.reviews, `Review count for ${id}`);
@@ -444,27 +463,50 @@ export function introducePhrase(progress, phraseId, now = new Date()) {
     learnedPhrases,
     phraseStats: {
       ...(progress.phraseStats ?? {}),
-      [phraseId]: emptyPhraseStat({ intervalDays: 1, dueDate: addDays(today, 1) }),
+      [phraseId]: emptyPhraseStat({ intervalDays: 1, difficulty: 0.5, dueDate: addDays(today, 1) }),
     },
   };
 }
 
+const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+
+export function scheduleForRating(current, rating) {
+  if (!Object.hasOwn(RATING_INTERVALS, rating)) throw new Error(`Unknown rating: ${rating}`);
+  const previousStability = clamp(Number(current?.intervalDays || 0.5), 0.25, 90);
+  const previousDifficulty = clamp(Number(current?.difficulty ?? 0.5), 0, 1);
+  const difficultyDelta = { again: 0.12, hard: 0.04, good: -0.03, easy: -0.08 }[rating];
+  const difficulty = clamp(Number((previousDifficulty + difficultyDelta).toFixed(3)), 0.1, 0.95);
+
+  if (rating === "again") {
+    return {
+      intervalDays: 0,
+      difficulty,
+    };
+  }
+
+  const multiplier = rating === "hard"
+    ? 1.15 - difficulty * 0.08
+    : rating === "good"
+      ? 2.05 - difficulty * 0.35
+      : 3.05 - difficulty * 0.45;
+  const minimum = rating === "hard" ? 1 : rating === "good" ? 2 : 4;
+  const stability = clamp(previousStability * multiplier, 0.5, 90);
+  return { intervalDays: clamp(Math.max(minimum, Math.round(stability)), 1, 90), difficulty };
+}
+
 export function intervalForRating(previous, rating) {
-  if (rating === "again") return 0;
-  if (rating === "hard") return Math.min(90, Math.max(1, Math.round(previous * 1.2)));
-  if (rating === "good") return Math.min(90, previous === 0 ? 2 : Math.max(2, Math.round(previous * 2)));
-  if (rating === "easy") return Math.min(90, previous === 0 ? 4 : Math.max(4, Math.round(previous * 3)));
-  throw new Error(`Unknown rating: ${rating}`);
+  return scheduleForRating({ intervalDays: previous, difficulty: 0.5 }, rating).intervalDays;
 }
 
 export function ratePhrase(progress, phraseId, rating, now = new Date()) {
   if (!phraseById.has(phraseId)) throw new Error(`Unknown phrase: ${phraseId}`);
   const today = localDate(now);
   const current = migratePhraseStat(progress.phraseStats?.[phraseId] ?? {}, today);
-  const intervalDays = intervalForRating(current.intervalDays, rating);
+  const schedule = scheduleForRating(current, rating);
   const stat = {
-    intervalDays,
-    dueDate: addDays(today, intervalDays),
+    ...current,
+    ...schedule,
+    dueDate: addDays(today, schedule.intervalDays),
     lastReviewed: today,
     reviews: current.reviews + 1,
     lapses: current.lapses + (rating === "again" ? 1 : 0),
@@ -642,7 +684,11 @@ export function getDuePhrases(progress, now = new Date()) {
     .sort((left, right) => {
       const a = migratePhraseStat(stats[left.id] ?? {}, today);
       const b = migratePhraseStat(stats[right.id] ?? {}, today);
-      return a.dueDate.localeCompare(b.dueDate) || a.intervalDays - b.intervalDays || left.id.localeCompare(right.id);
+      return a.dueDate.localeCompare(b.dueDate)
+        || b.difficulty - a.difficulty
+        || b.lapses - a.lapses
+        || a.intervalDays - b.intervalDays
+        || left.id.localeCompare(right.id);
     });
 }
 
@@ -664,10 +710,48 @@ function stableScore(value) {
   return score;
 }
 
-function reviewMode(phrase, index) {
-  const modes = ["flashcard", "listening", "builder", "speaking"];
-  const proposed = modes[index % modes.length];
-  return proposed === "builder" && phrase.polish.trim().split(/\s+/).length < 3 ? "flashcard" : proposed;
+const GUIDED_MODE_SKILLS = {
+  flashcard: "recall",
+  builder: "recall",
+  listening: "listening",
+  speaking: "speaking",
+};
+
+function aggregateSkillEvidence(progress, skill) {
+  let attempts = 0;
+  let points = 0;
+  for (const item of Object.values(progress.skillStats ?? {})) {
+    const aggregate = item?.[skill];
+    attempts += aggregate?.attempts ?? 0;
+    points += aggregate?.points ?? 0;
+  }
+  return { attempts, mean: attempts ? points / attempts : null };
+}
+
+export function adaptiveReviewMode(progress, phrase, index = 0) {
+  const phraseEvidence = progress.skillStats?.[phrase.id] ?? {};
+  const wordCount = phrase.polish.trim().split(/\s+/).length;
+  const modes = wordCount >= 3 ? ["flashcard", "listening", "builder", "speaking"] : ["flashcard", "listening", "speaking"];
+  const rotation = stableScore(phrase.id) % modes.length;
+  const rotated = [...modes.slice(rotation), ...modes.slice(0, rotation)];
+  const ranked = rotated.map((mode, order) => {
+    const skill = GUIDED_MODE_SKILLS[mode];
+    const item = phraseEvidence[skill];
+    const global = aggregateSkillEvidence(progress, skill);
+    const evidenceScore = item?.attempts
+      ? (item.points + 1) / (item.attempts + 2)
+      : global.attempts >= 3
+        ? global.mean - 0.08
+        : 0.5;
+    const modeVariety = ((order - index + modes.length) % modes.length) * 0.002;
+    return { mode, skill, score: evidenceScore + modeVariety, attempts: item?.attempts ?? 0 };
+  }).sort((left, right) => left.score - right.score || left.mode.localeCompare(right.mode));
+  const choice = ranked[0];
+  return {
+    mode: choice.mode,
+    focusSkill: choice.skill,
+    reason: choice.attempts ? "weakest-evidence" : "needs-evidence",
+  };
 }
 
 export function buildDailySession(progress, now = new Date()) {
@@ -703,7 +787,13 @@ export function buildDailySession(progress, now = new Date()) {
 
   const tasks = [
     ...newPhrases.map((phrase, index) => ({ id: `learn-${phrase.id}`, type: "learn", phraseId: phrase.id, unitId: phrase.unitId, index })),
-    ...reviewEntries.map(({ phrase, reinforcement }, index) => ({ id: `${reinforcement ? "reinforce" : "review"}-${index}-${phrase.id}`, type: "review", mode: reviewMode(phrase, index), phraseId: phrase.id, ...(reinforcement ? { reinforcement: true } : {}) })),
+    ...reviewEntries.map(({ phrase, reinforcement }, index) => ({
+      id: `${reinforcement ? "reinforce" : "review"}-${index}-${phrase.id}`,
+      type: "review",
+      ...adaptiveReviewMode(progress, phrase, index),
+      phraseId: phrase.id,
+      ...(reinforcement ? { reinforcement: true } : {}),
+    })),
     { id: `dialogue-${dialogue.id}`, type: "dialogue", dialogueId: dialogue.id },
   ];
 
