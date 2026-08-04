@@ -27,8 +27,16 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Validate content review claims
+        run: npm run audit:content
       - name: Run unit tests
         run: npm test
+      - name: Build and enforce bundle budget
+        run: npm run build && npm run check:bundle
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+      - name: Run functional and accessibility browser tests
+        run: npx playwright test e2e/app.spec.js
 
   deploy:
     needs: test

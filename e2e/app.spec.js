@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 async function revealPracticeModes(page) {
   const chooser = page.getByRole("button", { name: /choose another drill/i });
@@ -180,4 +181,17 @@ test("opens every primary navigation destination without console errors", async 
     await expect(page.locator("main.content")).toBeVisible();
   }
   expect(errors).toEqual([]);
+});
+
+test("has no serious or critical Axe violations on primary views", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  for (const hash of ["#home", "#course", "#practice", "#sounds", "#dialogues", "#grammar", "#data"]) {
+    await page.goto(`/${hash}`);
+    await expect(page.locator("main.content")).toBeVisible();
+    await expect(page.locator(".route-loading")).toHaveCount(0);
+    const results = await new AxeBuilder({ page }).analyze();
+    const blockers = results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact));
+    const details = blockers.flatMap((violation) => violation.nodes.map((node) => `${violation.id}: ${node.target.join(" ")}`));
+    expect(blockers.map((violation) => ({ id: violation.id, nodes: violation.nodes.length })), `${hash}: ${details.join("; ")}`).toEqual([]);
+  }
 });
