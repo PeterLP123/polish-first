@@ -729,7 +729,8 @@ main h1[tabindex="-1"]:focus { outline: none; }
   .continue-copy { width: 100%; }
   .continue-card h2 { max-width: 260px; font-size: 27px; }
   .continue-card p { max-width: 72%; margin-bottom: 12px; font-size: 13px; }
-  .lesson-meta { margin-bottom: 16px; }
+  .lesson-meta { flex-wrap: wrap; row-gap: 5px; margin-bottom: 16px; }
+  .continue-card .light-button, .mastery-actions button { white-space: normal; overflow-wrap: anywhere; text-align: center; }
   .poster-letter { font-size: 155px; right: 10px; bottom: 8px; opacity: .3; text-shadow: 6px 5px 0 rgba(64, 9, 12, .3); }
   .practice-toolbar { display: flex; flex-direction: column; align-items: stretch; margin-inline: -20px; padding: 8px 20px 10px; }
   .practice-mode-toggle { display: flex; width: 100%; justify-content: center; }
