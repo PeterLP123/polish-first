@@ -77,9 +77,9 @@ main h1[tabindex="-1"]:focus { outline: none; }
 .nav-label { display: block; margin: 0 12px 10px; color: var(--faint); font-size: 10px; font-weight: 800; letter-spacing: .16em; }
 .sidebar nav { display: flex; flex-direction: column; gap: 6px; }
 .sidebar nav button { position: relative; min-height: 48px; border: 0; background: transparent; color: #5a564f; display: flex; align-items: center; gap: 13px; padding: 11px 13px; border-radius: 13px; font-weight: 600; text-align: left; transition: background-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease; }
-.sidebar nav button:hover { background: var(--wash); color: var(--ink); transform: translateX(2px); }
+.sidebar nav button:hover { background: var(--wash); color: var(--ink); }
 .sidebar nav button.active { background: var(--red-soft); color: var(--red-dark); font-weight: 700; box-shadow: inset 0 0 0 1px rgba(210, 36, 43, .1); }
-.sidebar nav button.active::before { content: ""; position: absolute; left: -20px; width: 4px; height: 24px; border-radius: 0 3px 3px 0; background: var(--red); }
+.sidebar nav button.active::before { content: ""; position: absolute; left: 0; width: 4px; height: 24px; border-radius: 0 3px 3px 0; background: var(--red); }
 .nav-badge { margin-left: auto; background: var(--red); color: white; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 800; box-shadow: 0 2px 6px rgba(170, 23, 30, .3); }
 .sidebar-card { margin-top: auto; padding: 16px; background: linear-gradient(150deg, #fbf3e4, #f8e9d3); border: 1px solid #f0dec4; border-radius: 16px; }
 .sidebar-card-top { display: flex; align-items: center; gap: 10px; color: var(--orange); }
@@ -580,7 +580,7 @@ main h1[tabindex="-1"]:focus { outline: none; }
 .nav-group { display: flex; flex-direction: column; gap: 5px; }
 .nav-group + .nav-group { margin-top: 20px; }
 .nav-group .nav-label { margin-bottom: 4px; }
-.sidebar nav { min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.sidebar nav { min-width: 0; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
 .sidebar-card.compact { margin: 0; padding: 12px 14px; box-shadow: none; }
 .desktop-xp-stat { display: contents; }
 .app-main.focus-mode { margin-left: 0; }

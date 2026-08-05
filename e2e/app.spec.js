@@ -62,6 +62,18 @@ test("keeps core pages within the mobile viewport", async ({ page }) => {
   }
 });
 
+test("keeps the desktop sidebar free of horizontal scrolling", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await page.goto("/#data");
+  const navigation = page.locator(".sidebar nav");
+  await expect(navigation).toBeVisible();
+  const overflow = await navigation.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(overflow.scrollWidth, JSON.stringify(overflow)).toBeLessThanOrEqual(overflow.clientWidth);
+});
+
 test("opens the new practice modes from validated deep links", async ({ page }) => {
   await page.goto("/#practice?mode=reading&topic=Travel");
   await expect(page.getByText("READ A PRACTICAL TEXT")).toBeVisible();
