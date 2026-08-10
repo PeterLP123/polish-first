@@ -8,6 +8,14 @@ const rows = files.map((file) => ({ file, bytes: statSync(join(assetsDirectory, 
 const html = readFileSync("dist/index.html", "utf8");
 const entryName = html.match(/<script[^>]+src="[^"]*\/([^/]+\.js)"/)?.[1];
 const failures = [];
+const jsFiles = new Set(files.filter((file) => file.endsWith(".js")));
+const imports = new Map([...jsFiles].map((file) => {
+  const source = readFileSync(join(assetsDirectory, file), "utf8");
+  const dependencies = [...source.matchAll(/(?:import|export)(?:[^"'()]*?from)?["']\.\/([^"']+\.js)["']/g)]
+    .map((match) => match[1])
+    .filter((dependency) => jsFiles.has(dependency));
+  return [file, [...new Set(dependencies)]];
+}));
 
 for (const row of rows) {
   const limit = row.file.endsWith(".css") ? limits.css : limits.js;
@@ -17,6 +25,25 @@ const entry = rows.find((row) => row.file === entryName);
 if (!entry) failures.push("Could not identify the production entry chunk.");
 else if (entry.bytes > limits.entry) failures.push(`${entry.file} entry is ${entry.bytes} bytes; limit is ${limits.entry}`);
 
+const states = new Map();
+const stack = [];
+const cycles = [];
+function visit(file) {
+  states.set(file, "visiting");
+  stack.push(file);
+  for (const dependency of imports.get(file) ?? []) {
+    if (states.get(dependency) === "visiting") {
+      cycles.push([...stack.slice(stack.indexOf(dependency)), dependency]);
+    } else if (!states.has(dependency)) {
+      visit(dependency);
+    }
+  }
+  stack.pop();
+  states.set(file, "visited");
+}
+for (const file of jsFiles) if (!states.has(file)) visit(file);
+for (const cycle of cycles) failures.push(`Circular production chunks: ${cycle.join(" -> ")}`);
+
 console.log("Production bundle budget");
 rows.sort((left, right) => right.bytes - left.bytes).slice(0, 8).forEach((row) => console.log(`${row.file}: ${(row.bytes / 1024).toFixed(1)} KiB`));
 if (failures.length) {
@@ -24,4 +51,5 @@ if (failures.length) {
   process.exitCode = 1;
 } else {
   console.log(`Entry chunk: ${entry.file} (${(entry.bytes / 1024).toFixed(1)} KiB)`);
+  console.log("Production chunk graph: acyclic");
 }

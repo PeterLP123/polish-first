@@ -9,7 +9,7 @@ export default defineConfig({
       output: {
         codeSplitting: {
           groups: [
-            { name: "curriculum", test: /src[\\/]data[\\/](?:course|content)[\\/\.]/, priority: 30, includeDependenciesRecursively: false },
+            { name: "curriculum", test: /src[\\/]data[\\/](?:course|dialogue-missions|content)[\\/\.]/, priority: 30, includeDependenciesRecursively: false },
             { name: "react-vendor", test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/, priority: 20, includeDependenciesRecursively: false },
             { name: "icons", test: /node_modules[\\/]lucide-react[\\/]/, priority: 10, includeDependenciesRecursively: false },
           ],

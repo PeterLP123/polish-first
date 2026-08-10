@@ -33,8 +33,12 @@ jobs:
         run: npm test
       - name: Build and enforce bundle budget
         run: npm run build && npm run check:bundle
+        env:
+          VITE_BASE_PATH: /polish-first/
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
+      - name: Smoke-test production bundle
+        run: npm run smoke:production
       - name: Run functional and accessibility browser tests
         run: npx playwright test e2e/app.spec.js
 
