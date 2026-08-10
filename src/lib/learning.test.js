@@ -6,6 +6,7 @@ import {
   addDays,
   addStudy,
   buildDailySession,
+  buildFocusDeck,
   buildReviewDeck,
   createDemoProgress,
   diagnosticsSummary,
@@ -33,6 +34,7 @@ import {
   skillLabel,
   similarity,
   todayMinutes,
+  validateProgress,
   weekActivity,
 } from "./learning.js";
 import { ContentCatalog, allPhrases, clozeItems, dialogues, milestones, readings, units, writingItems } from "../data/course.js";
@@ -120,6 +122,79 @@ describe("learning helpers", () => {
     expect(buildReviewDeck(progress, 2, NOW).map((phrase) => phrase.id)).toEqual([second.id, third.id]);
   });
 
+  it("builds a focus deck from the learner's strongest risk signals", () => {
+    const [again, hard, lapsed, difficult, weak, neutral] = allPhrases;
+    const progress = {
+      ...baseProgress(),
+      learnedPhrases: [neutral.id, weak.id, difficult.id, lapsed.id, hard.id, again.id],
+      phraseStats: {
+        [again.id]: { ...stat("2026-08-01", 1), difficulty: 0.4, lastRating: "again" },
+        [hard.id]: { ...stat("2026-08-01", 2), difficulty: 0.4, lastRating: "hard" },
+        [lapsed.id]: { ...stat("2026-08-01", 4), reviews: 3, lapses: 2 },
+        [difficult.id]: { ...stat("2026-08-01", 6), difficulty: 0.8 },
+        [weak.id]: { ...stat("2026-08-01", 8), difficulty: 0.4 },
+        [neutral.id]: { ...stat("2026-08-01", 10), difficulty: 0.4 },
+      },
+      skillStats: {
+        [weak.id]: { recall: { attempts: 5, points: 1, lastScore: 0.2, lastAttempted: NOW.toISOString() } },
+      },
+    };
+
+    expect(buildFocusDeck(progress, 6, NOW).map((phrase) => phrase.id)).toEqual([
+      again.id,
+      hard.id,
+      lapsed.id,
+      difficult.id,
+      weak.id,
+      neutral.id,
+    ]);
+  });
+
+  it("deduplicates, fills, and caps the focus deck using learned review items", () => {
+    const learned = allPhrases.slice(0, 12);
+    const progress = {
+      ...baseProgress(),
+      learnedPhrases: learned.map((phrase) => phrase.id),
+      phraseStats: Object.fromEntries(learned.map((phrase, index) => [phrase.id, {
+        ...stat(addDays("2026-07-10", index), index + 1),
+        difficulty: 0.4,
+      }])),
+    };
+    const expected = buildReviewDeck(progress, learned.length, NOW).slice(0, 5).map((phrase) => phrase.id);
+    const left = buildFocusDeck(progress, 5, NOW);
+    const right = buildFocusDeck(progress, 5, NOW);
+
+    expect(left.map((phrase) => phrase.id)).toEqual(expected);
+    expect(left).toHaveLength(5);
+    expect(new Set(left.map((phrase) => phrase.id))).toHaveLength(5);
+    expect(left).toEqual(right);
+    expect(buildFocusDeck(progress, 0, NOW)).toEqual([]);
+    expect(buildFocusDeck(baseProgress(), 10, NOW)).toEqual([]);
+  });
+
+  it("never lets future hard phrases crowd a currently due phrase out of a bounded focus set", () => {
+    const futureHard = allPhrases.slice(0, 10);
+    const overdue = allPhrases[10];
+    const progress = {
+      ...baseProgress(),
+      learnedPhrases: [...futureHard, overdue].map((phrase) => phrase.id),
+      phraseStats: {
+        ...Object.fromEntries(futureHard.map((phrase) => [phrase.id, {
+          ...stat("2026-09-01", 2),
+          difficulty: 0.85,
+          lapses: 3,
+          lastRating: "hard",
+        }])),
+        [overdue.id]: { ...stat("2026-07-01", 8), difficulty: 0.35, lastRating: "good" },
+      },
+    };
+
+    const deck = buildFocusDeck(progress, 10, NOW);
+    expect(deck[0].id).toBe(overdue.id);
+    expect(deck.map((phrase) => phrase.id)).toContain(overdue.id);
+    expect(deck).toHaveLength(10);
+  });
+
   it("reports due, learning, and mastered phrases", () => {
     const [due, learning, mastered] = allPhrases;
     const progress = {
@@ -142,6 +217,50 @@ describe("learning helpers", () => {
     expect(left.tasks.filter((task) => task.type === "review")).toHaveLength(budget.reviewCount);
     expect(left.tasks.filter((task) => task.type === "dialogue")).toHaveLength(1);
     expect(left.tasks).toEqual(right.tasks);
+  });
+
+  it("interleaves due reviews with learning while preserving a learn-first, dialogue-last session", () => {
+    const duePhrases = allPhrases.slice(0, 7);
+    const progress = {
+      ...baseProgress(),
+      dailyGoal: 15,
+      learnedPhrases: duePhrases.map((phrase) => phrase.id),
+      phraseStats: Object.fromEntries(duePhrases.map((phrase) => [phrase.id, stat("2026-07-01", 1)])),
+    };
+    const session = buildDailySession(progress, NOW);
+
+    expect(session.tasks.slice(0, 6).map((task) => task.type)).toEqual(["learn", "review", "learn", "review", "learn", "review"]);
+    expect(session.tasks[0].type).toBe("learn");
+    expect(session.tasks.at(-1).type).toBe("dialogue");
+    expect(validateProgress({ ...progress, activeSession: session })).toBeTruthy();
+  });
+
+  it("keeps every reinforcement after its learn without an avoidable immediate repeat", () => {
+    const progress = { ...baseProgress(), dailyGoal: 20 };
+    const left = buildDailySession(progress, NOW);
+    const right = buildDailySession(progress, NOW);
+    const tasks = left.tasks.slice(0, -1);
+    const learnIndexes = new Map(tasks
+      .map((task, index) => [task, index])
+      .filter(([task]) => task.type === "learn")
+      .map(([task, index]) => [task.phraseId, index]));
+
+    for (const [index, task] of tasks.entries()) {
+      if (task.type !== "review" || !task.reinforcement || !learnIndexes.has(task.phraseId)) continue;
+      expect(learnIndexes.get(task.phraseId)).toBeLessThan(index);
+    }
+    for (let index = 0; index < tasks.length - 1; index += 1) {
+      const task = tasks[index];
+      const next = tasks[index + 1];
+      const anotherLearnRemains = tasks.slice(index + 1).some((candidate) => candidate.type === "learn");
+      if (task.type === "learn" && next.type === "review" && anotherLearnRemains) {
+        expect(next.phraseId).not.toBe(task.phraseId);
+      }
+    }
+
+    expect(left.tasks).toEqual(right.tasks);
+    expect(new Set(left.tasks.map((task) => task.id)).size).toBe(left.tasks.length);
+    expect(validateProgress({ ...progress, activeSession: left })).toBeTruthy();
   });
 
   it("marks same-session practice as reinforcement instead of a scheduled review", () => {
@@ -301,7 +420,7 @@ describe("learning helpers", () => {
     expect(skillLabel(5, 0.8)).toBe("Strong");
     expect(nextRecommendation(baseProgress(), NOW)).toMatchObject({ kind: "unit", unitId: units[0].id });
     const due = { ...baseProgress(), learnedPhrases: [allPhrases[0].id], phraseStats: { [allPhrases[0].id]: stat("2026-07-14", 1) } };
-    expect(nextRecommendation(due, NOW)).toMatchObject({ kind: "practice", mode: "flashcards", itemIds: [allPhrases[0].id] });
+    expect(nextRecommendation(due, NOW)).toMatchObject({ kind: "practice", mode: "focus", itemIds: [allPhrases[0].id] });
   });
 
   it("records milestone retries and never revokes the first pass", () => {

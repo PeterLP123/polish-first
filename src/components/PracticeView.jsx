@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, BookOpen, Brain, Check, FilePenLine, Headphones, Languages, Lightbulb, Mic, RotateCcw, Trophy, Volume2, X } from "lucide-react";
+import { ArrowRight, BookOpen, Brain, Check, FilePenLine, Headphones, Languages, Lightbulb, Mic, RotateCcw, Target, Trophy, Volume2, X } from "lucide-react";
 import { allPhrases, clozeItems, courseTopics, readings, units, writingItems } from "../data/course.js";
-import { buildReviewDeck, evaluateWriting, nextRecommendation, nextUnitForProgress, scoreCloze, scoreForRating, scoreReading, shuffled, similarity } from "../lib/learning.js";
+import { buildFocusDeck, buildReviewDeck, evaluateWriting, nextRecommendation, nextUnitForProgress, scoreCloze, scoreForRating, scoreReading, shuffled, similarity } from "../lib/learning.js";
 import { useDrillKeys } from "../lib/drill-keys.js";
 import { speakPolish } from "../lib/speech.js";
 import { AudioButton, PronunciationCard } from "./LearningControls.jsx";
@@ -19,10 +19,12 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
   const [mode, setMode] = useState(initialMode);
   const [topic, setTopic] = useState(topicOptions.includes(initialTopic) ? initialTopic : "All");
   const [showModeChooser, setShowModeChooser] = useState(false);
+  const [practiceRun, setPracticeRun] = useState(0);
   const tabRefs = useRef([]);
   useEffect(() => setMode(initialMode), [initialMode]);
   useEffect(() => setTopic(topicOptions.includes(initialTopic) ? initialTopic : "All"), [initialTopic]);
   const modes = [
+    { id: "focus", label: "Focus review", icon: Target, hint: "Hard & due" },
     { id: "flashcards", label: "Flashcards", icon: RotateCcw, hint: "Recall meanings" },
     { id: "listen", label: "Listen", icon: Headphones, hint: "Train your ear" },
     { id: "builder", label: "Build it", icon: Languages, hint: "Make sentences" },
@@ -32,6 +34,7 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
     { id: "grammar", label: "Grammar", icon: Lightbulb, hint: "Complete the gap" },
   ];
   const nextUnit = nextUnitForProgress(progress);
+  const focusDeck = buildFocusDeck(progress, 10);
   const recommendation = nextRecommendation(progress);
   const recommendedMode = recommendation.kind === "practice" && modes.some((item) => item.id === recommendation.mode) ? recommendation.mode : "flashcards";
   const recommendedLabel = modes.find((item) => item.id === recommendedMode)?.label ?? "Flashcards";
@@ -45,7 +48,13 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
   const grammarPool = topic === "All" ? clozeItems.filter((item) => item.stage === nextUnit.stage) : topic === "Entire course" ? clozeItems : clozeItems.filter((item) => item.topic === topic);
   const updateRoute = (nextMode, nextTopic) => window.history.replaceState(null, "", `#practice?mode=${encodeURIComponent(nextMode)}&topic=${encodeURIComponent(nextTopic)}`);
   const selectMode = (nextMode) => { setMode(nextMode); updateRoute(nextMode, topic); };
-  const startRecommended = () => { selectMode(recommendedMode); setShowModeChooser(false); };
+  const startRecommended = () => {
+    const nextMode = recommendedMode === "focus" && !focusDeck.length ? "flashcards" : recommendedMode;
+    if (mode !== nextMode) selectMode(nextMode);
+    setPracticeRun((current) => current + 1);
+    setShowModeChooser(false);
+  };
+  const chooseAnotherDrill = (nextMode = "flashcards") => { selectMode(nextMode); setShowModeChooser(true); };
   const selectTopic = (nextTopic) => { setTopic(nextTopic); updateRoute(mode, nextTopic); };
   const moveTabFocus = (event, index) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
@@ -60,24 +69,29 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
       <header className="page-header"><div><span className="eyebrow red"><Brain size={15} /> PRACTICE STUDIO</span><h1>Make it stick</h1><p>Choose a drill whenever you want extra practice. Ratings feed the same review schedule as your daily session.</p></div><div className="mastery-chip"><Trophy size={21} /><span><strong>{progress.totalReviews}</strong> reviews</span></div></header>
       <section className="practice-recommendation panel" aria-label="Recommended practice">
         <div><span className="eyebrow">BEST NEXT DRILL</span><strong>{recommendedLabel}</strong><p>{recommendation.kind === "practice" ? recommendation.reason : `${nextUnit.stage} recall is the clearest practice starting point.`}</p></div>
-        <button className="primary-button" onClick={startRecommended}>Start {recommendedLabel} <ArrowRight size={17} /></button>
+        <button className="primary-button" onClick={startRecommended}>{mode === recommendedMode && (recommendedMode === "focus" || practiceRun > 0) ? "Restart" : "Start"} {recommendedLabel} <ArrowRight size={17} /></button>
       </section>
       <div className="practice-toolbar">
         <button className="secondary-button practice-mode-toggle" aria-expanded={showModeChooser} onClick={() => setShowModeChooser((open) => !open)}>{showModeChooser ? "Hide drill choices" : `Choose another drill · ${modes.find((item) => item.id === mode)?.label}`}</button>
         <div className={`mode-tabs ${showModeChooser ? "" : "mobile-collapsed"}`} role="tablist" aria-label="Practice mode">
           {modes.map(({ id, label, icon: Icon, hint }, index) => <button key={id} id={`practice-tab-${id}`} ref={(element) => { tabRefs.current[index] = element; }} role="tab" aria-label={label} aria-selected={mode === id} aria-controls={`practice-panel-${id}`} tabIndex={mode === id ? 0 : -1} className={mode === id ? "active" : ""} onKeyDown={(event) => moveTabFocus(event, index)} onClick={() => selectMode(id)}><Icon size={20} /><span><strong>{label}</strong><small>{hint}</small></span></button>)}
         </div>
-        <label className="practice-filter">Practice set <select value={topic} onChange={(event) => selectTopic(event.target.value)}>{topicOptions.map((item) => <option key={item} value={item}>{item === "All" ? "Recommended" : item}</option>)}</select></label>
+        {mode === "focus"
+          ? <span className="focus-deck-size"><Target size={16} /> {focusDeck.length ? `${focusDeck.length}-phrase focus set` : "Focus set unlocks after learning"}</span>
+          : <label className="practice-filter">Practice set <select value={topic} onChange={(event) => selectTopic(event.target.value)}>{topicOptions.map((item) => <option key={item} value={item}>{item === "All" ? "Recommended" : item}</option>)}</select></label>}
       </div>
-      {topic === "All" && <p className="practice-scope-note">Recommended set: reviews due, phrases you have learned, and {nextUnit.stage} material from your current course stage.</p>}
+      {mode === "focus"
+        ? <p className="practice-scope-note">Built from Hard and Again ratings, repeat lapses, lower-scoring practice skills, and phrases due now. It is calculated from your existing progress, not saved as another list.</p>
+        : topic === "All" && <p className="practice-scope-note">Recommended set: reviews due, phrases you have learned, and {nextUnit.stage} material from your current course stage.</p>}
       <div id={`practice-panel-${mode}`} role="tabpanel" aria-labelledby={`practice-tab-${mode}`}>
-        {mode === "flashcards" && <Flashcards key={`flashcards-${topic}`} progress={progress} award={award} onAttempt={onAttempt} pool={phrasePool} />}
-        {mode === "listen" && <ListeningQuiz key={`listen-${topic}`} award={award} onAttempt={onAttempt} pool={phrasePool} />}
-        {mode === "builder" && <SentenceBuilder key={`builder-${topic}`} award={award} onAttempt={onAttempt} pool={phrasePool} />}
-        {mode === "speak" && <SpeakPractice key={`speak-${topic}`} progress={progress} award={award} onAttempt={onAttempt} pool={phrasePool} />}
-        {mode === "reading" && <ReadingPractice key={`reading-${topic}`} items={readingPool.length ? readingPool : readings} award={award} onAttempt={onAttempt} />}
-        {mode === "writing" && <WritingPractice key={`writing-${topic}`} items={writingPool.length ? writingPool : writingItems} award={award} onAttempt={onAttempt} />}
-        {mode === "grammar" && <GrammarPractice key={`grammar-${topic}`} items={grammarPool.length ? grammarPool : clozeItems} award={award} onAttempt={onAttempt} />}
+        {mode === "focus" && <FocusReview key={`focus-${practiceRun}`} deck={focusDeck} award={award} onAttempt={onAttempt} onChooseAnother={chooseAnotherDrill} />}
+        {mode === "flashcards" && <Flashcards key={`flashcards-${topic}-${practiceRun}`} progress={progress} award={award} onAttempt={onAttempt} pool={phrasePool} />}
+        {mode === "listen" && <ListeningQuiz key={`listen-${topic}-${practiceRun}`} award={award} onAttempt={onAttempt} pool={phrasePool} />}
+        {mode === "builder" && <SentenceBuilder key={`builder-${topic}-${practiceRun}`} award={award} onAttempt={onAttempt} pool={phrasePool} />}
+        {mode === "speak" && <SpeakPractice key={`speak-${topic}-${practiceRun}`} progress={progress} award={award} onAttempt={onAttempt} pool={phrasePool} />}
+        {mode === "reading" && <ReadingPractice key={`reading-${topic}-${practiceRun}`} items={readingPool.length ? readingPool : readings} award={award} onAttempt={onAttempt} />}
+        {mode === "writing" && <WritingPractice key={`writing-${topic}-${practiceRun}`} items={writingPool.length ? writingPool : writingItems} award={award} onAttempt={onAttempt} />}
+        {mode === "grammar" && <GrammarPractice key={`grammar-${topic}-${practiceRun}`} items={grammarPool.length ? grammarPool : clozeItems} award={award} onAttempt={onAttempt} />}
       </div>
     </div>
   );
@@ -85,6 +99,110 @@ export default function PracticeView({ progress, award, onAttempt = () => {}, in
 
 function RatingButtons({ onRate }) {
   return <div className="srs-rating-row" aria-label="Schedule this phrase">{RATINGS.map((rating, index) => <button key={rating.id} className={`rating-${rating.id}`} onClick={() => onRate(rating.id)}><strong>{rating.label}</strong><small>{rating.hint}</small><kbd className="key-hint" aria-hidden="true">{index + 1}</kbd></button>)}</div>;
+}
+
+function FocusReview({ deck, award, onAttempt, onChooseAnother }) {
+  const [activeDeck, setActiveDeck] = useState(() => deck.slice(0, 10));
+  const [index, setIndex] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [phase, setPhase] = useState("review");
+  const [results, setResults] = useState([]);
+  const [repairCompleted, setRepairCompleted] = useState(false);
+  const actionLock = useRef(false);
+  const phrase = activeDeck[index];
+  const toughResults = results.filter((result) => result.rating === "again" || result.rating === "hard");
+
+  useEffect(() => { actionLock.current = false; }, [index, phase]);
+
+  const rate = (rating) => {
+    if (!phrase || phase !== "review" || actionLock.current) return;
+    actionLock.current = true;
+    const xp = rating === "again" ? 2 : rating === "hard" ? 4 : rating === "good" ? 6 : 8;
+    award({ xp, minutes: index % 3 === 0 ? 1 : 0, phraseId: phrase.id, review: true, rating }, `+${xp} XP · Focus review scheduled`);
+    onAttempt(phrase.id, "recall", "flashcards", scoreForRating(rating));
+    const nextResults = [...results, { phrase, rating }];
+    setResults(nextResults);
+    if (index + 1 >= activeDeck.length) {
+      setPhase("summary");
+      setRevealed(false);
+      return;
+    }
+    setIndex((current) => current + 1);
+    setRevealed(false);
+  };
+
+  const startRepair = () => {
+    setActiveDeck(toughResults.map((result) => result.phrase));
+    setIndex(0);
+    setRevealed(false);
+    setRepairCompleted(false);
+    setPhase("repair");
+  };
+
+  const nextRepair = () => {
+    if (!phrase || phase !== "repair" || actionLock.current) return;
+    actionLock.current = true;
+    if (index + 1 >= activeDeck.length) {
+      setRepairCompleted(true);
+      setPhase("summary");
+      setRevealed(false);
+      return;
+    }
+    setIndex((current) => current + 1);
+    setRevealed(false);
+  };
+
+  const restart = () => {
+    setActiveDeck(deck.slice(0, 10));
+    setIndex(0);
+    setRevealed(false);
+    setResults([]);
+    setRepairCompleted(false);
+    setPhase("review");
+  };
+
+  useDrillKeys({
+    onSpace: () => {
+      if (!phrase || phase === "summary") return false;
+      if (revealed) speakPolish(phrase.polish); else setRevealed(true);
+      return true;
+    },
+    onRate: (rating) => {
+      if (phase !== "review" || !revealed) return false;
+      rate(rating);
+      return true;
+    },
+  });
+
+  if (!activeDeck.length) {
+    return <section className="practice-stage focus-empty panel"><span className="focus-empty-icon"><Target /></span><h2>Your focus set will grow here</h2><p>Learn and rate a few phrases first. Focus Review will then gather what is hard, missed, or due without creating another saved list.</p><button className="primary-button" onClick={() => onChooseAnother("flashcards")}>Start with flashcards <ArrowRight size={17} /></button></section>;
+  }
+
+  if (phase === "summary") {
+    const recalled = results.filter((result) => result.rating === "good" || result.rating === "easy").length;
+    const hard = results.filter((result) => result.rating === "hard").length;
+    const missed = results.filter((result) => result.rating === "again").length;
+    const title = repairCompleted ? "Repair pass complete" : toughResults.length ? "Set complete — weak spots identified" : `All ${results.length} phrases recalled`;
+    const summary = repairCompleted
+      ? "You retrieved every tough phrase once more. Your original ratings still control the review schedule."
+      : toughResults.length
+        ? "Your first ratings decide what returns and when. Repair the tough phrases once now, or leave them to the schedule."
+        : "Your first ratings have updated the review schedule. This set is finished.";
+    return <section className="practice-stage focus-summary panel" aria-labelledby="focus-summary-title"><span className="focus-summary-icon"><Target /></span><span className="eyebrow red">FOCUS SET COMPLETE</span><h2 id="focus-summary-title">{title}</h2><p>{summary}</p><div className="focus-summary-grid"><article><strong>{recalled}</strong><span>Recalled</span></article><article><strong>{hard}</strong><span>Hard</span></article><article><strong>{missed}</strong><span>Missed</span></article></div><div className="focus-summary-actions">{toughResults.length > 0 && !repairCompleted && <button className="primary-button" onClick={startRepair}><RotateCcw size={17} /> Review {toughResults.length} tough {toughResults.length === 1 ? "phrase" : "phrases"}</button>}<button className="secondary-button" onClick={restart}>Run a fresh focus set</button><button className="text-button" onClick={() => onChooseAnother("flashcards")}>Choose another drill</button></div></section>;
+  }
+
+  return (
+    <section className="practice-stage focus-review-stage">
+      <div className="practice-topline"><span>{phase === "repair" ? "Repair" : "Focus"} {index + 1} of {activeDeck.length}</span><div className="mini-progress"><span style={{ width: `${((index + 1) / activeDeck.length) * 100}%` }} /></div><span>English → Polish</span></div>
+      <article className={`flashcard focus-card ${revealed ? "flipped" : ""}`} aria-label={`Focus review: ${phrase.english}`}>
+        <span className="flashcard-label">{phase === "repair" ? "REPAIR FROM MEMORY" : "PRODUCE THE POLISH"}</span>
+        <h2>{phrase.english}</h2>
+        {!revealed && <p className="focus-cue">Say the Polish before revealing it. An effortful attempt matters more than a perfect one.</p>}
+        {revealed ? <div className="focus-answer"><AudioButton text={phrase.polish} compact /><strong lang="pl">{phrase.polish}</strong><span className="phonetic large">{phrase.phonetic}</span>{phrase.tip && <small>{phrase.tip}</small>}</div> : <button className="flashcard-reveal" onClick={() => setRevealed(true)}>Reveal Polish <kbd className="key-hint" aria-hidden="true">Space</kbd></button>}
+      </article>
+      {revealed && (phase === "review" ? <RatingButtons onRate={rate} /> : <div className="focus-repair-action"><button className="primary-button" onClick={nextRepair}>{index + 1 >= activeDeck.length ? "Finish repair" : "Next tough phrase"} <ArrowRight size={17} /></button><small>This repair pass does not overwrite your first rating.</small></div>)}
+    </section>
+  );
 }
 
 function Flashcards({ progress, award, onAttempt, pool }) {

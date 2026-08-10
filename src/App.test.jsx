@@ -3,12 +3,15 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App.jsx";
+import { allPhrases } from "./data/course.js";
 import { DEFAULT_PROGRESS, buildDailySession } from "./lib/learning.js";
 
 describe("guided learning flow", () => {
   beforeEach(() => {
     localStorage.clear();
     window.location.hash = "#home";
+    delete window.SpeechRecognition;
+    delete window.webkitSpeechRecognition;
     window.scrollTo = vi.fn();
     window.speechSynthesis = { cancel: vi.fn(), speak: vi.fn(), getVoices: () => [], addEventListener: vi.fn() };
     window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
@@ -32,6 +35,61 @@ describe("guided learning flow", () => {
     window.location.hash = "#session";
     render(<App />);
     expect(await screen.findByText(/step 2 of 11/i)).toBeInTheDocument();
+  });
+
+  it("queues one Again retry before the closing dialogue and keeps that dialogue last", async () => {
+    const session = buildDailySession({ ...DEFAULT_PROGRESS });
+    const review = { ...session.tasks.find((task) => task.type === "review"), mode: "flashcard" };
+    const dialogue = session.tasks.find((task) => task.type === "dialogue");
+    session.tasks = [review, dialogue];
+    session.cursor = 0;
+    session.results = [];
+    session.requeuedPhraseIds = [];
+    localStorage.setItem("polish-first-progress", JSON.stringify({ ...DEFAULT_PROGRESS, activeSession: session }));
+    window.location.hash = "#session";
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /reveal meaning/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^again/i }));
+    expect(await screen.findByText(/step 2 of 3/i)).toBeInTheDocument();
+
+    let savedSession;
+    await waitFor(() => {
+      savedSession = JSON.parse(localStorage.getItem("polish-first-progress")).activeSession;
+      expect(savedSession.tasks.map((task) => task.type)).toEqual(["review", "review", "dialogue"]);
+    });
+    expect(savedSession.tasks[1]).toMatchObject({ id: `retry-${review.phraseId}`, phraseId: review.phraseId, mode: "flashcard" });
+
+    fireEvent.click(screen.getByRole("button", { name: /reveal meaning/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^again/i }));
+    expect(await screen.findByText(/step 3 of 3/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /finish with a real-life scene/i })).toBeInTheDocument();
+
+    await waitFor(() => {
+      savedSession = JSON.parse(localStorage.getItem("polish-first-progress")).activeSession;
+      expect(savedSession.tasks).toHaveLength(3);
+    });
+    expect(savedSession.tasks.filter((task) => task.id === `retry-${review.phraseId}`)).toHaveLength(1);
+    expect(savedSession.requeuedPhraseIds).toEqual([review.phraseId]);
+  });
+
+  it("labels speech feedback as transcript similarity rather than pronunciation quality", async () => {
+    let recognition;
+    window.SpeechRecognition = class {
+      constructor() { recognition = this; }
+      start() { this.onstart?.(); }
+      stop() {}
+      abort() {}
+    };
+    window.location.hash = "#course";
+    render(<App />);
+    fireEvent.click((await screen.findAllByRole("button", { name: /start unit/i }))[0]);
+    fireEvent.click(await screen.findByRole("button", { name: /now you try/i }));
+    recognition.onresult({ resultIndex: 0, results: [[{ transcript: allPhrases[0].polish }]] });
+    expect(await screen.findByRole("button", { name: /100% transcript match/i })).toBeInTheDocument();
+    recognition.onresult({ resultIndex: 0, results: [[{ transcript: "qqqqqq" }]] });
+    expect(await screen.findByRole("button", { name: /0% transcript match/i })).toBeInTheDocument();
+    expect(screen.queryByText(/pronunciation score/i)).not.toBeInTheDocument();
   });
 
   it("shows a completion summary and can deliberately build another session", async () => {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Target, X } from "lucide-react";
 import { allPhrases } from "../data/course.js";
 
@@ -16,6 +16,7 @@ const LEVELS = [
 ];
 
 const CHECK_STAGES = ["Starter", "Everyday", "A2 bridge", "B1 foundations", "B1 confidence"];
+const FOCUSABLE_SELECTOR = 'a[href], button:not(:disabled), input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
 
 function buildQuestions() {
   const targets = CHECK_STAGES.map((stage) => allPhrases.find((phrase) => phrase.stage === stage)).filter(Boolean);
@@ -41,11 +42,56 @@ export function placementStage(score, selfLevel) {
 
 export default function PlacementCheck({ onComplete, onClose }) {
   const questions = useMemo(buildQuestions, []);
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const onCloseRef = useRef(onClose);
   const [step, setStep] = useState("goal");
   const [goal, setGoal] = useState(null);
   const [selfLevel, setSelfLevel] = useState(null);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [correct, setCorrect] = useState(0);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus({ preventScroll: true });
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const dialog = dialogRef.current;
+      const controls = [...(dialog?.querySelectorAll(FOCUSABLE_SELECTOR) ?? [])];
+      if (!controls.length) return;
+
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (!dialog.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown, true);
+      if (previousFocus?.isConnected) previousFocus.focus?.({ preventScroll: true });
+    };
+  }, []);
 
   const finish = (correctAnswers = correct) => {
     const placementScore = correctAnswers / questions.length;
@@ -68,9 +114,9 @@ export default function PlacementCheck({ onComplete, onClose }) {
   const skipToStarter = () => onComplete({ goal: goal?.id ?? "conversation", primaryTopic: goal?.topic ?? "Social", selfLevel: selfLevel ?? "new", placementScore: 0, startingStage: "Starter" });
 
   return (
-    <div className="lesson-overlay placement-overlay" role="dialog" aria-modal="true" aria-label="Personalise your Polish path">
+    <div ref={dialogRef} className="lesson-overlay placement-overlay" role="dialog" aria-modal="true" aria-label="Personalise your Polish path">
       <section className="placement-dialog panel">
-        <button className="icon-button placement-close" onClick={onClose} aria-label="Close placement check"><X size={19} /></button>
+        <button ref={closeButtonRef} className="icon-button placement-close" onClick={onClose} aria-label="Close placement check"><X size={19} /></button>
         <span className="eyebrow red"><Target size={15} /> PERSONALISE YOUR PATH</span>
         {step === "goal" && <>
           <h1>What do you want Polish for?</h1>

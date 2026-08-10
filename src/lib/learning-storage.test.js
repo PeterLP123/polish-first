@@ -33,6 +33,32 @@ function envelope(progress) {
 }
 
 describe("local progress storage", () => {
+  it("freezes the v7 browser progress contract", () => {
+    expect(PROGRESS_STORAGE_KEY).toBe("polish-first-progress");
+    expect(PROGRESS_VERSION).toBe(7);
+    expect(Object.keys(DEFAULT_PROGRESS).sort()).toEqual([
+      "activeSession",
+      "analyticsSince",
+      "assessmentHistory",
+      "completedUnits",
+      "dailyGoal",
+      "dailyStats",
+      "dialogueStats",
+      "lastStudyDate",
+      "learnedPhrases",
+      "learnerProfile",
+      "milestoneStats",
+      "phraseStats",
+      "skillStats",
+      "streak",
+      "studyDates",
+      "todayMinutes",
+      "totalReviews",
+      "version",
+      "xp",
+    ]);
+  });
+
   it.each([
     ["negative XP", { xp: -50 }],
     ["non-finite totals", { totalReviews: Number.POSITIVE_INFINITY }],

@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { allPhrases } from "../data/course.js";
 import GuidedSession from "./GuidedSession.jsx";
+
+afterEach(cleanup);
 
 describe("guided session tasks", () => {
   it("requires a new phrase meaning to be revealed before completion", () => {
@@ -25,5 +27,22 @@ describe("guided session tasks", () => {
     fireEvent.click(screen.getByRole("button", { name: /reveal meaning/i }));
     expect(screen.getByText("Needed effort")).toBeInTheDocument();
     expect(screen.queryByText("Double the interval")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["weakest-evidence", "listening", "Chosen to strengthen listening from your practice evidence."],
+    ["needs-evidence", "speaking", "Chosen to learn more about your speaking."],
+  ])("explains an adaptive %s review without exposing implementation detail", (reason, focusSkill, expected) => {
+    const task = { id: `review-${reason}`, type: "review", mode: "flashcard", phraseId: allPhrases[0].id, reason, focusSkill };
+    const session = { date: "2026-07-14", cursor: 0, completedAt: null, results: [], tasks: [task] };
+    render(<GuidedSession session={session} onCommit={vi.fn()} onExit={vi.fn()} onRestart={vi.fn()} />);
+    expect(screen.getByText(expected)).toBeInTheDocument();
+  });
+
+  it("keeps legacy review tasks free of an invented rationale", () => {
+    const task = { id: "legacy-review", type: "review", mode: "flashcard", phraseId: allPhrases[0].id };
+    const session = { date: "2026-07-14", cursor: 0, completedAt: null, results: [], tasks: [task] };
+    render(<GuidedSession session={session} onCommit={vi.fn()} onExit={vi.fn()} onRestart={vi.fn()} />);
+    expect(screen.queryByText(/^Chosen to /)).not.toBeInTheDocument();
   });
 });

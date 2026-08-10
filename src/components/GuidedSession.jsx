@@ -59,10 +59,19 @@ function LearnTask({ phrase, onDone }) {
 }
 
 function ReviewTask({ task, phrase, onRate }) {
-  if (task.mode === "listening") return <ListeningTask phrase={phrase} onRate={onRate} />;
-  if (task.mode === "builder") return <BuilderTask phrase={phrase} onRate={onRate} />;
-  if (task.mode === "speaking") return <SpeakingTask phrase={phrase} onRate={onRate} reinforcement={task.reinforcement} />;
-  return <RecallTask phrase={phrase} onRate={onRate} reinforcement={task.reinforcement} />;
+  const rationale = task.focusSkill && task.reason === "weakest-evidence"
+    ? `Chosen to strengthen ${task.focusSkill} from your practice evidence.`
+    : task.focusSkill && task.reason === "needs-evidence"
+      ? `Chosen to learn more about your ${task.focusSkill}.`
+      : null;
+  if (task.mode === "listening") return <ListeningTask phrase={phrase} onRate={onRate} rationale={rationale} />;
+  if (task.mode === "builder") return <BuilderTask phrase={phrase} onRate={onRate} rationale={rationale} />;
+  if (task.mode === "speaking") return <SpeakingTask phrase={phrase} onRate={onRate} reinforcement={task.reinforcement} rationale={rationale} />;
+  return <RecallTask phrase={phrase} onRate={onRate} reinforcement={task.reinforcement} rationale={rationale} />;
+}
+
+function ReviewRationale({ children }) {
+  return children ? <p className="session-review-rationale"><small>{children}</small></p> : null;
 }
 
 function RatingButtons({ onRate, reinforcement = false }) {
@@ -70,18 +79,18 @@ function RatingButtons({ onRate, reinforcement = false }) {
   return <div className="srs-rating-row session-ratings" aria-label="How well did you remember?">{ratings.map((rating, index) => <button key={rating.id} className={`rating-${rating.id}`} onClick={() => onRate(rating.id)}><strong>{rating.label}</strong><small>{rating.hint}</small><kbd className="key-hint" aria-hidden="true">{index + 1}</kbd></button>)}</div>;
 }
 
-function RecallTask({ phrase, onRate, reinforcement = false }) {
+function RecallTask({ phrase, onRate, reinforcement = false, rationale = null }) {
   const [revealed, setRevealed] = useState(false);
   useDrillKeys({
     onSpace: () => { if (revealed) speakPolish(phrase.polish); else setRevealed(true); return true; },
     onRate: (rating) => { if (!revealed) return false; onRate(rating); return true; },
   });
   return (
-    <section className="session-task-card"><div className="session-task-heading"><span className="eyebrow"><RotateCcw size={14} /> RETRIEVE</span><h1>What does this mean?</h1><p>Try to recall it before revealing the answer.</p></div><article className={`flashcard ${revealed ? "flipped" : ""}`}><AudioButton text={phrase.polish} compact /><h2 lang="pl">{phrase.polish}</h2><p className="phonetic large">{phrase.phonetic}</p>{revealed ? <div className="flashcard-answer"><span>{phrase.english}</span>{phrase.tip && <small>{phrase.tip}</small>}</div> : <button className="flashcard-reveal" onClick={() => setRevealed(true)}>Reveal meaning <kbd className="key-hint" aria-hidden="true">Space</kbd></button>}</article>{revealed && <RatingButtons onRate={onRate} reinforcement={reinforcement} />}</section>
+    <section className="session-task-card"><div className="session-task-heading"><span className="eyebrow"><RotateCcw size={14} /> RETRIEVE</span><h1>What does this mean?</h1><p>Try to recall it before revealing the answer.</p><ReviewRationale>{rationale}</ReviewRationale></div><article className={`flashcard ${revealed ? "flipped" : ""}`}><AudioButton text={phrase.polish} compact /><h2 lang="pl">{phrase.polish}</h2><p className="phonetic large">{phrase.phonetic}</p>{revealed ? <div className="flashcard-answer"><span>{phrase.english}</span>{phrase.tip && <small>{phrase.tip}</small>}</div> : <button className="flashcard-reveal" onClick={() => setRevealed(true)}>Reveal meaning <kbd className="key-hint" aria-hidden="true">Space</kbd></button>}</article>{revealed && <RatingButtons onRate={onRate} reinforcement={reinforcement} />}</section>
   );
 }
 
-function ListeningTask({ phrase, onRate }) {
+function ListeningTask({ phrase, onRate, rationale = null }) {
   const [answer, setAnswer] = useState(null);
   useDrillKeys({ onSpace: () => { speakPolish(phrase.polish); return true; } });
   const options = useMemo(() => {
@@ -91,11 +100,11 @@ function ListeningTask({ phrase, onRate }) {
   }, [phrase]);
   const correct = answer === phrase.id;
   return (
-    <section className="session-task-card listening-stage"><div className="session-task-heading"><span className="eyebrow"><Headphones size={14} /> LISTEN</span><h1>What did you hear?</h1><p>Connect the sound directly to its meaning.</p></div><button className="big-listen" onClick={() => speakPolish(phrase.polish)}><span><Volume2 size={32} /></span>Play Polish</button><button className="slow-link" onClick={() => speakPolish(phrase.polish, 0.58)}>Play more slowly</button><div className="answer-grid">{options.map((option) => <button key={option.id} className={answer ? (option.id === phrase.id ? "correct" : option.id === answer ? "wrong" : "muted") : ""} onClick={() => !answer && setAnswer(option.id)}>{option.english}{answer && option.id === phrase.id && <Check size={18} />}{answer === option.id && option.id !== phrase.id && <X size={18} />}</button>)}</div>{answer && <div className={`quiz-feedback ${correct ? "correct" : "wrong"}`} role="status"><div><strong>{correct ? "Exactly right" : "Reconnect the sound and answer"}</strong><p>{phrase.polish} · {phrase.phonetic} · {phrase.english}</p></div><button className="primary-button" onClick={() => onRate(correct ? "good" : "again")}>Continue <ArrowRight size={17} /></button></div>}</section>
+    <section className="session-task-card listening-stage"><div className="session-task-heading"><span className="eyebrow"><Headphones size={14} /> LISTEN</span><h1>What did you hear?</h1><p>Connect the sound directly to its meaning.</p><ReviewRationale>{rationale}</ReviewRationale></div><button className="big-listen" onClick={() => speakPolish(phrase.polish)}><span><Volume2 size={32} /></span>Play Polish</button><button className="slow-link" onClick={() => speakPolish(phrase.polish, 0.58)}>Play more slowly</button><div className="answer-grid">{options.map((option) => <button key={option.id} className={answer ? (option.id === phrase.id ? "correct" : option.id === answer ? "wrong" : "muted") : ""} onClick={() => !answer && setAnswer(option.id)}>{option.english}{answer && option.id === phrase.id && <Check size={18} />}{answer === option.id && option.id !== phrase.id && <X size={18} />}</button>)}</div>{answer && <div className={`quiz-feedback ${correct ? "correct" : "wrong"}`} role="status"><div><strong>{correct ? "Exactly right" : "Reconnect the sound and answer"}</strong><p>{phrase.polish} · {phrase.phonetic} · {phrase.english}</p></div><button className="primary-button" onClick={() => onRate(correct ? "good" : "again")}>Continue <ArrowRight size={17} /></button></div>}</section>
   );
 }
 
-function BuilderTask({ phrase, onRate }) {
+function BuilderTask({ phrase, onRate, rationale = null }) {
   const words = useMemo(() => shuffled(phrase.polish.replace(/[.,!?]$/g, "").split(" ").map((word, index) => ({ word, key: `${word}-${index}` }))), [phrase]);
   const [bank, setBank] = useState(words);
   const [chosen, setChosen] = useState([]);
@@ -105,17 +114,17 @@ function BuilderTask({ phrase, onRate }) {
   const correct = similarity(answer, expected) > 0.98;
   const add = (token) => { setChosen((current) => [...current, token]); setBank((current) => current.filter((item) => item.key !== token.key)); };
   return (
-    <section className="session-task-card builder-stage"><div className="session-task-heading"><span className="eyebrow"><Languages size={14} /> BUILD</span><h1>{phrase.english}</h1><p>Put the Polish words in their natural order.</p></div><div className={`build-zone ${checked ? (correct ? "correct" : "wrong") : ""}`}>{chosen.length ? chosen.map((token) => <button key={token.key} onClick={() => { setBank((current) => [...current, token]); setChosen((current) => current.filter((item) => item.key !== token.key)); setChecked(false); }}>{token.word}</button>) : <span>Your sentence appears here</span>}</div><div className="word-bank">{bank.map((token) => <button key={token.key} onClick={() => add(token)}>{token.word}</button>)}</div>{checked && <div className={`builder-feedback ${correct ? "correct" : "wrong"}`} role="status"><strong>{correct ? "Świetnie!" : "Follow the sound guide and try this again later."}</strong><span>{phrase.polish} · <em>{phrase.phonetic}</em></span></div>}<div className="builder-actions"><button className="secondary-button" onClick={() => { setBank(words); setChosen([]); setChecked(false); }}><RotateCcw size={17} /> Reset</button>{checked ? <button className="primary-button" onClick={() => onRate(correct ? "good" : "again")}>Continue <ArrowRight size={17} /></button> : <button className="primary-button" onClick={() => setChecked(true)} disabled={bank.length > 0}>Check <Check size={17} /></button>}</div></section>
+    <section className="session-task-card builder-stage"><div className="session-task-heading"><span className="eyebrow"><Languages size={14} /> BUILD</span><h1>{phrase.english}</h1><p>Put the Polish words in their natural order.</p><ReviewRationale>{rationale}</ReviewRationale></div><div className={`build-zone ${checked ? (correct ? "correct" : "wrong") : ""}`}>{chosen.length ? chosen.map((token) => <button key={token.key} onClick={() => { setBank((current) => [...current, token]); setChosen((current) => current.filter((item) => item.key !== token.key)); setChecked(false); }}>{token.word}</button>) : <span>Your sentence appears here</span>}</div><div className="word-bank">{bank.map((token) => <button key={token.key} onClick={() => add(token)}>{token.word}</button>)}</div>{checked && <div className={`builder-feedback ${correct ? "correct" : "wrong"}`} role="status"><strong>{correct ? "Świetnie!" : "Follow the sound guide and try this again later."}</strong><span>{phrase.polish} · <em>{phrase.phonetic}</em></span></div>}<div className="builder-actions"><button className="secondary-button" onClick={() => { setBank(words); setChosen([]); setChecked(false); }}><RotateCcw size={17} /> Reset</button>{checked ? <button className="primary-button" onClick={() => onRate(correct ? "good" : "again")}>Continue <ArrowRight size={17} /></button> : <button className="primary-button" onClick={() => setChecked(true)} disabled={bank.length > 0}>Check <Check size={17} /></button>}</div></section>
   );
 }
 
-function SpeakingTask({ phrase, onRate, reinforcement = false }) {
+function SpeakingTask({ phrase, onRate, reinforcement = false, rationale = null }) {
   const [attempted, setAttempted] = useState(false);
   useDrillKeys({
     onSpace: () => { speakPolish(phrase.polish); return true; },
     onRate: (rating) => { if (!attempted) return false; onRate(rating); return true; },
   });
-  return <section className="session-task-card"><div className="session-task-heading"><span className="eyebrow"><Mic size={14} /> SPEAK</span><h1>Say it naturally, not perfectly</h1><p>Microphone checking is optional. Your self-rating records how this recall felt.</p></div><PronunciationCard phrase={phrase} extended onComplete={() => setAttempted(true)} /><button className="secondary-button self-rate-toggle" onClick={() => setAttempted(true)}>I said it aloud</button>{attempted && <RatingButtons onRate={onRate} reinforcement={reinforcement} />}</section>;
+  return <section className="session-task-card"><div className="session-task-heading"><span className="eyebrow"><Mic size={14} /> SPEAK</span><h1>Say it naturally, not perfectly</h1><p>Microphone checking is optional. Your self-rating records how this recall felt.</p><ReviewRationale>{rationale}</ReviewRationale></div><PronunciationCard phrase={phrase} extended onComplete={() => setAttempted(true)} /><button className="secondary-button self-rate-toggle" onClick={() => setAttempted(true)}>I said it aloud</button>{attempted && <RatingButtons onRate={onRate} reinforcement={reinforcement} />}</section>;
 }
 
 function SessionComplete({ session, onExit, onRestart, upcomingDue }) {

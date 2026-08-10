@@ -371,6 +371,8 @@ main h1[tabindex="-1"]:focus { outline: none; }
 .session-task-heading { text-align: center; max-width: 620px; margin: 0 auto; }
 .session-task-heading h1 { margin: 8px 0 7px; font-size: 32px; font-weight: 800; letter-spacing: -.025em; }
 .session-task-heading p { margin: 0; color: var(--muted); line-height: 1.6; }
+.session-task-heading .session-review-rationale { display: inline-flex; margin-top: 10px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); background: var(--wash); line-height: 1.35; }
+.session-review-rationale small { font-size: 11px; font-weight: 700; }
 .session-primary-action { display: flex; justify-content: flex-end; }
 .session-primary-action .primary-button { min-width: 210px; }
 .session-dialogue .dialogue-stage { margin-top: 2px; }
@@ -395,7 +397,7 @@ main h1[tabindex="-1"]:focus { outline: none; }
 .text-practice input:not([type="radio"]), .text-practice textarea { width: 100%; min-height: 50px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px 13px; resize: vertical; font-size: 16px; line-height: 1.5; scroll-margin-bottom: 150px; transition: border-color .16s ease, box-shadow .16s ease; }
 .text-practice textarea { min-height: 140px; }
 .text-practice input:not([type="radio"]):focus, .text-practice textarea:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(210, 36, 43, .1); }
-.mode-tabs { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.mode-tabs { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 .mode-tabs button { padding-inline: 10px; }
 
 .next-action { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 23px; }
@@ -439,7 +441,7 @@ main h1[tabindex="-1"]:focus { outline: none; }
 .milestone-result { min-height: 400px; display: grid; place-content: center; justify-items: center; text-align: center; }
 .milestone-result > div { display: flex; gap: 10px; }
 
-@media (max-width: 1050px) {
+@media (max-width: 1200px) {
   .mode-tabs { grid-template-columns: repeat(4, 1fr); }
   .skill-grid { grid-template-columns: repeat(3, 1fr); }
 }
@@ -596,6 +598,26 @@ main h1[tabindex="-1"]:focus { outline: none; }
 .practice-recommendation > div { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 4px 12px; }
 .practice-recommendation strong { font: 800 20px "Bricolage Grotesque"; }
 .practice-recommendation p { grid-column: 1 / -1; margin: 3px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.focus-deck-size { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 11px; color: var(--muted); background: var(--surface); font-size: 12px; font-weight: 700; }
+.focus-card h2 { max-width: 620px; text-align: center; font-size: clamp(32px, 5vw, 48px); line-height: 1.03; }
+.focus-cue { max-width: 470px; color: var(--muted); text-align: center; line-height: 1.55; }
+.focus-answer { width: min(520px, 94%); margin-top: 25px; padding-top: 24px; border-top: 1px solid var(--line); display: grid; justify-items: center; gap: 7px; text-align: center; }
+.focus-answer .icon-button { margin-bottom: 5px; color: white; background: var(--navy); border: 0; }
+.focus-answer > strong { font: 800 clamp(31px, 5vw, 48px)/1.05 "Bricolage Grotesque"; letter-spacing: -.03em; }
+.focus-answer > small { max-width: 440px; margin-top: 7px; color: var(--muted); line-height: 1.5; }
+.focus-repair-action { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; }
+.focus-repair-action small { color: var(--muted); }
+.focus-empty, .focus-summary { max-width: 760px; margin: 16px auto 0; text-align: center; }
+.focus-empty { display: grid; justify-items: center; gap: 10px; padding: 52px 30px; }
+.focus-empty h2, .focus-summary h2 { margin: 0; font-size: 30px; }
+.focus-empty p, .focus-summary > p { max-width: 590px; margin: 0 auto; color: var(--muted); line-height: 1.6; }
+.focus-empty-icon, .focus-summary-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 16px; color: var(--red-dark); background: var(--red-soft); }
+.focus-summary { display: grid; justify-items: center; gap: 15px; padding: 40px; }
+.focus-summary-grid { width: min(520px, 100%); display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.focus-summary-grid article { padding: 16px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--wash); display: flex; flex-direction: column; }
+.focus-summary-grid strong { font: 800 27px "Bricolage Grotesque"; }
+.focus-summary-grid span { color: var(--muted); font-size: 11px; }
+.focus-summary-actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 3px; }
 .writing-feedback { display: grid; gap: 14px; padding: 17px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .writing-feedback.correct { border-color: #9ac2b1; background: #f2faf7; }
 .writing-feedback.wrong { border-color: #ddafa1; background: #fff7f3; }
@@ -895,3 +917,14 @@ main h1[tabindex="-1"]:focus { outline: none; }
 [data-theme="dark"] .speech-orbit { color: #26211b; }
 [data-theme="dark"] .light-button { color: #aa171e; }
 [data-theme="dark"] .sound-wave i { background: #ff6b72; }
+[data-theme="dark"] .focus-deck-size { background: var(--surface); }
+[data-theme="dark"] .focus-summary-grid article { background: var(--wash); }
+
+@media (max-width: 620px) {
+  .focus-deck-size { width: 100%; justify-content: center; }
+  .focus-summary { padding: 30px 18px; }
+  .focus-summary h2 { font-size: 26px; }
+  .focus-summary-actions { width: 100%; flex-direction: column; }
+  .focus-summary-actions button { width: 100%; min-height: 48px; }
+  .focus-card h2 { font-size: 34px; }
+}

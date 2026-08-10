@@ -19,7 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { allPhrases, units } from "./data/course.js";
-import { addStudy, buildDailySession, createDemoProgress, currentSession, effectiveStreak, getDuePhrases, loadProgressResult, localDate, masterySummary, nextUnitForProgress, recordAttempt, recordDialogue, recordMilestoneResult, recordPlacement, saveProgress, scoreForRating, todayMinutes } from "./lib/learning.js";
+import { addStudy, buildDailySession, createDemoProgress, currentSession, effectiveStreak, getDuePhrases, loadProgressResult, localDate, masterySummary, nextUnitForProgress, recordAttempt, recordDialogue, recordMilestoneResult, recordPlacement, saveProgress, scoreForRating, similarity, todayMinutes } from "./lib/learning.js";
 import { viewFromHash } from "./lib/navigation.js";
 import { listenForPolish, speakPolish, speechRecognitionMessage } from "./lib/speech.js";
 import { applyTheme, getInitialTheme } from "./lib/theme.js";
@@ -300,7 +300,7 @@ function SpeechMiniPractice({ phrase, onSuccess }) {
   return (
     <button type="button" className={`speak-prompt ${status}`} onClick={listen} aria-pressed={status === "listening"}>
       <span className="mic-disc"><Mic size={20} /></span>
-      <span><strong>{status === "listening" ? "Tap to stop" : score ? `${score}% match — try again` : status === "unsupported" ? "Say it aloud" : "Now you try"}</strong><small>{status === "listening" ? "Listening for Polish…" : hint}</small></span>
+      <span><strong>{status === "listening" ? "Tap to stop" : score !== null ? `${score}% transcript match` : status === "unsupported" ? "Say it aloud" : "Now you try"}</strong><small>{status === "listening" ? "Listening for Polish…" : hint}</small></span>
     </button>
   );
 }
@@ -484,7 +484,8 @@ function App() {
       const requeuedPhraseIds = [...(active.requeuedPhraseIds ?? [])];
       if (result.rating === "again" && !requeuedPhraseIds.includes(task.phraseId)) {
         requeuedPhraseIds.push(task.phraseId);
-        tasks.push({ ...task, id: `retry-${task.phraseId}`, mode: "flashcard" });
+        const terminalDialogueIndex = tasks.reduce((found, candidate, index) => candidate.type === "dialogue" ? index : found, -1);
+        tasks.splice(terminalDialogueIndex < 0 ? tasks.length : terminalDialogueIndex, 0, { ...task, id: `retry-${task.phraseId}`, mode: "flashcard" });
       }
       const cursor = active.cursor + 1;
       const completedAt = cursor >= tasks.length ? new Date().toISOString() : null;

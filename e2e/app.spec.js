@@ -3,7 +3,11 @@ import AxeBuilder from "@axe-core/playwright";
 
 async function revealPracticeModes(page) {
   const chooser = page.getByRole("button", { name: /choose another drill/i });
-  if (await chooser.isVisible()) await chooser.click();
+  const mobileChooser = await page.evaluate(() => window.matchMedia("(max-width: 900px)").matches);
+  if (!mobileChooser) return;
+  await expect(chooser).toBeVisible();
+  if (await chooser.getAttribute("aria-expanded") !== "true") await chooser.click();
+  await expect(page.getByRole("button", { name: /hide drill choices/i })).toHaveAttribute("aria-expanded", "true");
 }
 
 test.beforeEach(async ({ page }) => {
@@ -22,6 +26,35 @@ test("starts and resumes a guided daily session", async ({ page }) => {
   await page.reload();
   await expect(page.getByText(/step 2 of 11/i)).toBeVisible();
   await expect(page.getByRole("progressbar", { name: /daily session progress/i })).toHaveAttribute("aria-valuenow", "2");
+});
+
+test("finishes a bounded Focus Review and repairs tough phrases once", async ({ page }) => {
+  await page.getByRole("button", { name: /explore sample progress/i }).click();
+  await page.evaluate(() => { window.location.hash = "#practice"; });
+  await expect(page.getByRole("heading", { name: /make it stick/i })).toBeVisible();
+  await page.getByRole("button", { name: /start Focus review/i }).click();
+
+  for (let index = 0; index < 10; index += 1) {
+    await page.getByRole("button", { name: /reveal Polish/i }).click();
+    const rating = index === 0 ? /^Again/i : index === 1 ? /^Hard/i : /^Good/i;
+    await page.getByRole("button", { name: rating }).click();
+  }
+
+  await expect(page.getByRole("heading", { name: /weak spots identified/i })).toBeVisible();
+  const summary = page.locator(".focus-summary-grid article");
+  await expect(summary.nth(0)).toContainText("8Recalled");
+  await expect(summary.nth(1)).toContainText("1Hard");
+  await expect(summary.nth(2)).toContainText("1Missed");
+  await page.getByRole("button", { name: /review 2 tough phrases/i }).click();
+
+  await page.getByRole("button", { name: /reveal Polish/i }).click();
+  await page.getByRole("button", { name: /next tough phrase/i }).click();
+  await page.getByRole("button", { name: /reveal Polish/i }).click();
+  await page.getByRole("button", { name: /finish repair/i }).click();
+
+  await expect(page.getByRole("heading", { name: /repair pass complete/i })).toBeVisible();
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("polish-first-progress")));
+  expect(saved).toMatchObject({ version: 7, xp: 0, totalReviews: 0 });
 });
 
 test("keeps core pages within the mobile viewport", async ({ page }) => {
@@ -72,6 +105,20 @@ test("keeps the desktop sidebar free of horizontal scrolling", async ({ page }) 
     scrollWidth: element.scrollWidth,
   }));
   expect(overflow.scrollWidth, JSON.stringify(overflow)).toBeLessThanOrEqual(overflow.clientWidth);
+});
+
+test("keeps all eight practice tabs readable on compact desktop widths", async ({ page }) => {
+  for (const width of [1080, 1100]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/#practice");
+    await expect(page.getByRole("button", { name: /start flashcards/i })).toBeVisible();
+    const tabs = page.getByRole("tab");
+    await expect(tabs).toHaveCount(8);
+    const cramped = await tabs.evaluateAll((items) => items
+      .filter((tab) => tab.scrollWidth > tab.clientWidth)
+      .map((tab) => ({ label: tab.textContent, clientWidth: tab.clientWidth, scrollWidth: tab.scrollWidth })));
+    expect(cramped, `practice tabs should fit at ${width}px`).toEqual([]);
+  }
 });
 
 test("opens the new practice modes from validated deep links", async ({ page }) => {

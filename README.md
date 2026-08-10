@@ -23,15 +23,16 @@ The app has no account system or external backend. Progress stays in the browser
 | 81 conversation-led units | 42 branching dialogues | Due-date spaced repetition |
 | 938 useful words and phrases | 24 Polish sound lessons | Finite guided daily sessions |
 | 66 grammar explainers | 36 readings + 36 writing tasks | XP, streaks, goals, and mastery |
-| Beginner survival Polish → B2 bridge | Flashcard, listening, building, speaking, reading, writing, and grammar modes | 10 multi-skill stage checks |
+| Beginner survival Polish → B2 bridge | Focus Review plus flashcard, listening, building, speaking, reading, writing, and grammar modes | 10 multi-skill stage checks |
 
 ## What makes it useful
 
 - **Speak from day one.** Every phrase combines browser-spoken Polish audio with an English-friendly pronunciation guide.
 - **Practise without perfect hardware.** Microphone recognition is optional; phone dictation and self-report fallbacks keep speaking work available across browsers.
 - **Review what is actually weak.** Again, Hard, Good, and Easy ratings schedule due reviews and prioritise weaker phrases.
+- **Repair weak spots without an endless feed.** Focus Review gives up to ten English-to-Polish retrievals, then offers one bounded repair pass for Hard and Again phrases.
 - **Move from recall to conversation.** Five-turn dialogue scenes cover introductions, travel, work, negotiations, presentations, and more.
-- **Keep sessions finishable.** Daily plans mix due reviews, new language, and one real-life dialogue instead of creating an endless feed.
+- **Keep sessions finishable.** Daily plans interleave due reviews with new language, explain adaptive choices, and still finish with one real-life dialogue.
 - **Own your progress.** Learning data stays in `localStorage` and can be validated, exported, and imported.
 
 ## Inside the course
@@ -66,6 +67,7 @@ The app has no account system or external backend. Progress stays in the browser
 - Content schemas and generated catalogues for phrases, dialogues, readings, writing tasks, grammar guides, and milestones
 - Browser speech synthesis with persisted Polish voice selection and graceful recognition fallbacks
 - Versioned learning-state migrations plus validated progress export and import
+- Derived focus queues and adaptive session sequencing without adding fields to the saved-progress contract
 - Responsive desktop, tablet, and mobile layouts with light and dark themes
 - Keyboard drill controls, Polish diacritic entry helpers, visible focus states, and reduced-motion support
 - Vitest component and domain tests, Playwright functional journeys, and desktop/mobile visual regression coverage

@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { readings, writingItems } from "../data/course.js";
+import { allPhrases, readings, writingItems } from "../data/course.js";
 import { DEFAULT_PROGRESS } from "../lib/learning.js";
 import PracticeView from "./PracticeView.jsx";
 
@@ -35,6 +35,7 @@ describe("expanded practice modes", () => {
   it("puts one recommended action before the full drill chooser", () => {
     render(<PracticeView progress={DEFAULT_PROGRESS} award={vi.fn()} />);
     expect(screen.getByRole("region", { name: /recommended practice/i })).toHaveTextContent(/best next drill.*flashcards/i);
+    expect(screen.getByRole("button", { name: /start flashcards/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /choose another drill/i })).toHaveAttribute("aria-expanded", "false");
   });
 
@@ -57,5 +58,67 @@ describe("expanded practice modes", () => {
     fireEvent.keyDown(flashcards, { key: "ArrowRight" });
     expect(screen.getByRole("tab", { name: "Listen" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Listen" })).toHaveFocus();
+  });
+
+  it("ends Focus Review after ten productive-recall ratings", () => {
+    const phrases = allPhrases.slice(0, 12);
+    const progress = {
+      ...DEFAULT_PROGRESS,
+      learnedPhrases: phrases.map((phrase) => phrase.id),
+      phraseStats: Object.fromEntries(phrases.map((phrase, index) => [phrase.id, {
+        intervalDays: 1,
+        difficulty: 0.75,
+        dueDate: "2026-01-01",
+        lastReviewed: "2025-12-31",
+        reviews: 2,
+        lapses: index + 1,
+        lastRating: "again",
+      }])),
+    };
+    const award = vi.fn();
+    const onAttempt = vi.fn();
+    render(<PracticeView progress={progress} award={award} onAttempt={onAttempt} initialMode="focus" />);
+
+    for (let index = 0; index < 10; index += 1) {
+      fireEvent.click(screen.getByRole("button", { name: /reveal Polish/i }));
+      fireEvent.click(screen.getByRole("button", { name: /^Easy/i }));
+    }
+
+    expect(screen.getByRole("heading", { name: /all 10 phrases recalled/i })).toBeInTheDocument();
+    expect(screen.getByText("10", { selector: ".focus-summary-grid strong" })).toBeInTheDocument();
+    expect(award).toHaveBeenCalledTimes(10);
+    expect(onAttempt).toHaveBeenCalledTimes(10);
+    expect(screen.queryByRole("button", { name: /reveal Polish/i })).not.toBeInTheDocument();
+  });
+
+  it("repairs hard and missed focus phrases without overwriting their first ratings", () => {
+    const phrases = allPhrases.slice(0, 2);
+    const progress = {
+      ...DEFAULT_PROGRESS,
+      learnedPhrases: phrases.map((phrase) => phrase.id),
+      phraseStats: Object.fromEntries(phrases.map((phrase) => [phrase.id, {
+        intervalDays: 1,
+        difficulty: 0.7,
+        dueDate: "2026-01-01",
+        lastReviewed: "2025-12-31",
+        reviews: 2,
+        lapses: 1,
+        lastRating: "hard",
+      }])),
+    };
+    const award = vi.fn();
+    render(<PracticeView progress={progress} award={award} onAttempt={vi.fn()} initialMode="focus" />);
+
+    fireEvent.click(screen.getByRole("button", { name: /reveal Polish/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Again/i }));
+    fireEvent.click(screen.getByRole("button", { name: /reveal Polish/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Good/i }));
+    fireEvent.click(screen.getByRole("button", { name: /review 1 tough phrase/i }));
+    fireEvent.click(screen.getByRole("button", { name: /reveal Polish/i }));
+    fireEvent.click(screen.getByRole("button", { name: /finish repair/i }));
+
+    expect(screen.getByRole("heading", { name: /repair pass complete/i })).toBeInTheDocument();
+    expect(screen.getByText(/original ratings still control the review schedule/i)).toBeInTheDocument();
+    expect(award).toHaveBeenCalledTimes(2);
   });
 });

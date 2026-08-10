@@ -848,6 +848,66 @@ export function adaptiveReviewMode(progress, phrase, index = 0) {
   };
 }
 
+function interleaveGuidedTasks(learnTasks, reviewTasks) {
+  if (!learnTasks.length) return [...reviewTasks];
+
+  const pendingLearns = [...learnTasks];
+  const pendingReviews = [...reviewTasks];
+  const sessionPhraseIds = new Set(learnTasks.map((task) => task.phraseId));
+  const introducedPhraseIds = new Set();
+  const ordered = [];
+  let preferLearn = true;
+
+  const takeLearn = () => {
+    const task = pendingLearns.shift();
+    ordered.push(task);
+    introducedPhraseIds.add(task.phraseId);
+    preferLearn = false;
+  };
+
+  const reviewIsEligible = (task) => !task.reinforcement
+    || !sessionPhraseIds.has(task.phraseId)
+    || introducedPhraseIds.has(task.phraseId);
+
+  while (pendingLearns.length || pendingReviews.length) {
+    if (preferLearn && pendingLearns.length) {
+      takeLearn();
+      continue;
+    }
+
+    if (pendingReviews.length) {
+      const previous = ordered.at(-1);
+      let reviewIndex = pendingReviews.findIndex((task) => reviewIsEligible(task)
+        && !(previous?.type === "learn" && previous.phraseId === task.phraseId));
+
+      if (reviewIndex < 0 && pendingLearns.length && previous?.type === "learn") {
+        takeLearn();
+        continue;
+      }
+      if (reviewIndex < 0) reviewIndex = pendingReviews.findIndex(reviewIsEligible);
+
+      if (reviewIndex >= 0) {
+        const [task] = pendingReviews.splice(reviewIndex, 1);
+        ordered.push(task);
+        preferLearn = true;
+        continue;
+      }
+    }
+
+    if (pendingLearns.length) {
+      takeLearn();
+      continue;
+    }
+
+    // A reinforcement can only be blocked while its matching learn is pending.
+    // This guard keeps the helper total if it is ever called with malformed data.
+    ordered.push(...pendingReviews);
+    pendingReviews.length = 0;
+  }
+
+  return ordered;
+}
+
 export function buildDailySession(progress, now = new Date()) {
   const date = localDate(now);
   const budget = SESSION_BUDGETS[progress.dailyGoal] ?? SESSION_BUDGETS[15];
@@ -881,15 +941,16 @@ export function buildDailySession(progress, now = new Date()) {
     return a.completions - b.completions || String(a.lastCompleted ?? "").localeCompare(String(b.lastCompleted ?? "")) || stableScore(`${date}-${left.id}`) - stableScore(`${date}-${right.id}`);
   })[0];
 
-  const tasks = [
-    ...newPhrases.map((phrase, index) => ({ id: `learn-${phrase.id}`, type: "learn", phraseId: phrase.id, unitId: phrase.unitId, index })),
-    ...reviewEntries.map(({ phrase, reinforcement }, index) => ({
+  const learnTasks = newPhrases.map((phrase, index) => ({ id: `learn-${phrase.id}`, type: "learn", phraseId: phrase.id, unitId: phrase.unitId, index }));
+  const reviewTasks = reviewEntries.map(({ phrase, reinforcement }, index) => ({
       id: `${reinforcement ? "reinforce" : "review"}-${index}-${phrase.id}`,
       type: "review",
       ...adaptiveReviewMode(progress, phrase, index),
       phraseId: phrase.id,
       ...(reinforcement ? { reinforcement: true } : {}),
-    })),
+    }));
+  const tasks = [
+    ...interleaveGuidedTasks(learnTasks, reviewTasks),
     { id: `dialogue-${dialogue.id}`, type: "dialogue", dialogueId: dialogue.id },
   ];
 
@@ -924,6 +985,58 @@ export function buildReviewDeck(progress, size = 12, now = new Date()) {
     return left.intervalDays - right.intervalDays || String(left.lastReviewed ?? "").localeCompare(String(right.lastReviewed ?? ""));
   });
   return [...due, ...ranked].slice(0, size);
+}
+
+function weakestPhraseSkillScore(progress, phraseId) {
+  const evidencedSkills = Object.values(progress.skillStats?.[phraseId] ?? {})
+    .filter((aggregate) => aggregate?.attempts > 0 && Number.isFinite(aggregate.points));
+  if (!evidencedSkills.length) return null;
+  return Math.min(...evidencedSkills.map((aggregate) => (aggregate.points + 1) / (aggregate.attempts + 2)));
+}
+
+export function buildFocusDeck(progress, size = 10, now = new Date()) {
+  const limit = Number.isFinite(size) ? Math.max(0, Math.floor(size)) : 0;
+  const learnedIds = new Set(progress.learnedPhrases ?? []);
+  if (!limit || !learnedIds.size) return [];
+
+  const today = localDate(now);
+  const stats = progress.phraseStats ?? {};
+  const dueCandidates = getDuePhrases(progress, now)
+    .filter((phrase) => learnedIds.has(phrase.id));
+  const focusCandidates = allPhrases
+    .filter((phrase) => learnedIds.has(phrase.id))
+    .map((phrase) => {
+      const stat = migratePhraseStat(stats[phrase.id] ?? {}, today);
+      const weakestSkill = weakestPhraseSkillScore(progress, phrase.id);
+      const ratingPriority = stat.lastRating === "again" ? 0 : stat.lastRating === "hard" ? 1 : 2;
+      return { phrase, stat, weakestSkill, ratingPriority };
+    })
+    .filter(({ stat, weakestSkill }) => stat.lastRating === "again"
+      || stat.lastRating === "hard"
+      || stat.lapses > 0
+      || stat.difficulty > 0.5
+      || (weakestSkill !== null && weakestSkill < 0.6))
+    .sort((left, right) => left.ratingPriority - right.ratingPriority
+      || right.stat.lapses - left.stat.lapses
+      || right.stat.difficulty - left.stat.difficulty
+      || (left.weakestSkill ?? 1) - (right.weakestSkill ?? 1)
+      || left.stat.dueDate.localeCompare(right.stat.dueDate)
+      || left.phrase.id.localeCompare(right.phrase.id))
+    .map(({ phrase }) => phrase);
+
+  const reviewOrder = buildReviewDeck(progress, allPhrases.length, now)
+    .filter((phrase) => learnedIds.has(phrase.id));
+  const remainingLearned = allPhrases.filter((phrase) => learnedIds.has(phrase.id));
+  const selected = [];
+  const selectedIds = new Set();
+
+  for (const phrase of [...dueCandidates, ...focusCandidates, ...reviewOrder, ...remainingLearned]) {
+    if (selectedIds.has(phrase.id)) continue;
+    selected.push(phrase);
+    selectedIds.add(phrase.id);
+    if (selected.length === limit) break;
+  }
+  return selected;
 }
 
 export function serializeProgress(progress, now = new Date()) {
@@ -1144,7 +1257,7 @@ function rankSkills(skills) {
 
 export function nextRecommendation(progress, now = new Date()) {
   const due = getDuePhrases(progress, now);
-  if (due.length) return { kind: "practice", mode: "flashcards", topic: "All", itemIds: due.slice(0, 12).map((phrase) => phrase.id), reason: `${due.length} phrase${due.length === 1 ? " is" : "s are"} due for review.` };
+  if (due.length) return { kind: "practice", mode: "focus", topic: "All", itemIds: due.slice(0, 10).map((phrase) => phrase.id), reason: `${due.length} phrase${due.length === 1 ? " is" : "s are"} due. Retrieve the Polish first, then repair anything hard.` };
 
   const milestone = milestoneOverview(progress).find((item) => item.ready && !item.passed);
   if (milestone) return { kind: "milestone", milestoneId: milestone.id, reason: `${milestone.stage} is complete. Check your scenario readiness.` };
