@@ -340,9 +340,12 @@ test("filters and expands grammar explainers", async ({ page }) => {
 
 test("finds and opens the new B1 course content", async ({ page }) => {
   await page.goto("/#course");
-  await page.getByRole("searchbox", { name: /search units or phrases/i }).fill("what-ifs");
-  await expect(page.getByText("Showing 1 of 81 units")).toBeVisible();
+  const search = page.getByRole("searchbox", { name: /search units or phrases/i });
+  await search.fill("what-ifs");
+  await expect(search).toHaveValue("what-ifs");
+  await expect(page.locator(".course-grid > .unit-card")).toHaveCount(1);
   const unit = page.locator(".unit-card").filter({ hasText: "Plans, wishes, and what-ifs" });
+  await expect(unit).toBeVisible();
   await expect(unit).toContainText("B1 in action");
   await unit.getByRole("button", { name: /start unit/i }).click();
   await expect(page.getByRole("dialog", { name: /Plans, wishes, and what-ifs lesson/i })).toBeVisible();
@@ -351,9 +354,12 @@ test("finds and opens the new B1 course content", async ({ page }) => {
 
 test("finds and opens the fluency bridge content", async ({ page }) => {
   await page.goto("/#course");
-  await page.getByRole("searchbox", { name: /search units or phrases/i }).fill("Predict with uncertainty");
-  await expect(page.getByText("Showing 1 of 81 units")).toBeVisible();
+  const search = page.getByRole("searchbox", { name: /search units or phrases/i });
+  await search.fill("Predict with uncertainty");
+  await expect(search).toHaveValue("Predict with uncertainty");
+  await expect(page.locator(".course-grid > .unit-card")).toHaveCount(1);
   const unit = page.locator(".unit-card").filter({ hasText: "Predict with uncertainty" });
+  await expect(unit).toBeVisible();
   await expect(unit).toContainText("B2 bridge");
   await unit.getByRole("button", { name: /start unit/i }).click();
   await expect(page.getByRole("dialog", { name: /Predict with uncertainty lesson/i })).toBeVisible();
