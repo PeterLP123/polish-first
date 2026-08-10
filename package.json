@@ -14,11 +14,11 @@
     "smoke:production": "node scripts/smoke-production.mjs"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "6.0.3",
-    "lucide-react": "1.24.0",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "vite": "8.1.4"
+    "@vitejs/plugin-react": "6.0.5",
+    "lucide-react": "1.30.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "vite": "8.2.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",
