@@ -150,6 +150,7 @@ describe("course data integrity", () => {
     expect(new Set(dialogues.map((dialogue) => dialogue.id)).size).toBe(dialogues.length);
     dialogues.forEach((dialogue) => {
       expect(dialogue.stage).toBeTruthy();
+      expect(dialogue.mission).toEqual({ goal: expect.any(String), canDo: expect.stringMatching(/^I can /) });
       expect(dialogue.lines.length).toBeGreaterThanOrEqual(5);
       dialogue.lines.forEach((line) => {
         expect(line.speaker).not.toBe("You");
@@ -162,5 +163,92 @@ describe("course data integrity", () => {
         expect(line.choices.some((choice) => !choice.good)).toBe(true);
       });
     });
+    expect(dialogues.find((dialogue) => dialogue.id === "directions").lines[0].choices.map((choice) => choice.polish)).not.toContain("Powiedz: ‘Przepraszam, jak dojść do dworca?’");
+  });
+
+  it("keeps Conversation Mission alternatives coherent with their fixed scenes", () => {
+    const allNaturalPolish = dialogues.flatMap((dialogue) => dialogue.lines.flatMap((line) => line.choices.filter((choice) => choice.good).map((choice) => choice.polish)));
+    for (const removed of [
+      "W lewo, a potem prosto?",
+      "Mam kaszel i boli mnie gardło.",
+      "Niestety nie dam rady, ale dziękuję.",
+      "Chciałbym otworzyć konto.",
+      "Nie ma ciepłej wody od rana.",
+      "Znalazłem bilet w kieszeni.",
+      "Dziękuję bardzo. Do widzenia!",
+      "Dziękuję. Z którego peronu?",
+      "Proszę. Do widzenia!",
+      "Czy muszę go skasować?",
+    ]) {
+      expect(allNaturalPolish).not.toContain(removed);
+    }
+    for (const replacement of [
+      "Prosto, a potem w lewo?",
+      "Mam silny ból głowy.",
+      "Jasne, chętnie przyjdę.",
+      "Chciałbym wymienić funty.",
+      "Sufit w łazience przecieka.",
+      "Poszedłem do punktu informacji.",
+      "Dziękuję. Pójdę na peron drugi.",
+      "Rozumiem, peron drugi. Dziękuję.",
+      "Dziękuję. Ile kosztuje?",
+      "Dobrze, będę gotowy przed czternastą.",
+    ]) {
+      expect(allNaturalPolish).toContain(replacement);
+    }
+    expect(dialogues.find((dialogue) => dialogue.id === "clothes-return").lines.at(-1).english).toMatch(/sorted/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "flat-viewing").lines[2].english).toMatch(/deposit/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "damaged-order").lines.at(-1).english).toMatch(/courier/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "cafe").lines.at(-1).english).toMatch(/your drink/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "directions").lines[2].english).toMatch(/straight ahead, then left/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "train-platform").lines[2].english).toMatch(/don't need to change/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "explaining-breakdown").lines[1].english).toMatch(/message history/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "restaurant").lines[1].english).toBe("May I take your order?");
+    expect(dialogues.find((dialogue) => dialogue.id === "car-rental").lines[3].english).toMatch(/full insurance costs/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "flat-viewing").lines[1].english).toMatch(/kitchen is next door/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "weekend-hike").lines[2].english).toMatch(/route is safe/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "doctor-follow-up").lines[4].english).toMatch(/fast beforehand/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "pharmacy").lines[1].english).toMatch(/allergies or take other medicines/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "pharmacy").lines[2].english).toMatch(/check the ingredients first/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "pharmacy").lines[3].english).toMatch(/dose depends on the specific product/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "pharmacy").lines[4].english).toMatch(/ask a doctor or pharmacist/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "hotel-check-in").lines[4].english).toMatch(/Wi-Fi is free/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "train-platform").lines[3].english).toMatch(/carriage five/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "market-stall").lines[3].english).toMatch(/pay by card/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "apartment-repair").lines[3].english).toMatch(/half an hour earlier/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "post-office").lines[4].english).toMatch(/top field/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "currency-exchange").lines[4].english).toMatch(/document is sufficient/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "car-rental").lines[4].english).toMatch(/petrol station/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "course-enrolment").lines[4].english).toMatch(/test is on our website/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "office-deadline").lines[2].english).toMatch(/move the deadline/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "internet-support").lines[4].english).toMatch(/send a notification/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "weekend-hike").lines[3].english).toMatch(/buy one here/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "weekend-hike").lines[4].english).toMatch(/marked in red/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "office-application").lines[3].english).toMatch(/marked place/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "project-delay").lines[1].english).toMatch(/found the cause/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "contract-terms").lines[2].english).toMatch(/send a reminder/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "contract-terms").lines[3].english).toMatch(/show you the provision/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "policy-consultation").lines[1].english).toMatch(/impact on people from outside/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "policy-consultation").lines[2].english).toMatch(/similar public transport/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "policy-consultation").lines[3].english).toMatch(/start before/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "policy-consultation").lines[4].english).toMatch(/implementation schedule before launch/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "birthday-invitation").lines[4].english).toMatch(/don't need to bring anything/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "doctor-visit").lines[2].english).toMatch(/before I recommend a medicine/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "doctor-visit").lines[3].english).toMatch(/check allergies/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "doctor-visit").lines[4].english).toMatch(/before recommending treatment/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "museum-visit").lines[3].english).toMatch(/photos without flash/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "clothes-return").lines[3].choices.some((choice) => choice.english.includes("another colour"))).toBe(true);
+    expect(dialogues.find((dialogue) => dialogue.id === "event-tickets").lines[4].english).toMatch(/booking confirmation/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "weekend-hike").lines[3].english).toMatch(/if you need a map/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "weekend-hike").lines[4].english).not.toMatch(/^yes/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "choosing-hotel").lines[3].choices.some((choice) => choice.english.includes("All things considered"))).toBe(true);
+    expect(dialogues.find((dialogue) => dialogue.id === "formal-complaint").lines[4].english).toMatch(/receipt confirmation/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "contract-terms").lines[4].english).toMatch(/^All fees are included/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "explaining-breakdown").lines[4].english).toMatch(/ask technical support for a new link/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "hotel-check-in").lines[2].english).toMatch(/^Breakfast is included/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "hotel-check-in").lines[0].choices.some((choice) => choice.english.includes("under Taylor and would like to check in"))).toBe(true);
+    expect(dialogues.find((dialogue) => dialogue.id === "train-platform").lines[1].english).toMatch(/^The train to Kraków leaves/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "apartment-repair").lines[3].english).toMatch(/just in case/i);
+    expect(dialogues.find((dialogue) => dialogue.id === "travel-rebooking").lines[1].english).toMatch(/arrives at seven tomorrow morning/i);
   });
 });

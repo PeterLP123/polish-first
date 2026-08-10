@@ -322,6 +322,8 @@ function App() {
   } : null);
   const [activeUnit, setActiveUnit] = useState(null);
   const [updateReady, setUpdateReady] = useState(false);
+  const [dialogueMissionActive, setDialogueMissionActive] = useState(false);
+  const [dialoguePickerOpen, setDialoguePickerOpen] = useState(false);
   const unitTriggerRef = useRef(null);
   const [toast, setToast] = useState("");
   const toastTimerRef = useRef(null);
@@ -449,6 +451,7 @@ function App() {
       : `#${nextView}`;
     if (window.location.hash !== hash) window.history.pushState(null, "", hash);
     setActiveUnit(null);
+    setDialogueMissionActive(false);
     setRoute(viewFromHash(hash));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -503,9 +506,28 @@ function App() {
     });
   };
 
-  const completeDialogue = (dialogueId, mistakes) => {
-    updateProgress((current) => recordDialogue(addStudy(current, { xp: 20, minutes: 1 }), dialogueId, mistakes));
-    showToast(`Scene complete · ${mistakes ? `${mistakes} useful ${mistakes === 1 ? "retry" : "retries"}` : "no retries"}`);
+  const completeDialogue = (dialogueId, mistakes, missionSummary = null) => {
+    updateProgress((current) => {
+      const challenge = missionSummary?.mode === "challenge";
+      const productiveTurns = challenge ? missionSummary.independent + missionSummary.supported : 0;
+      const study = challenge
+        ? { xp: 20 + productiveTurns * 10, minutes: 1 + missionSummary.total }
+        : { xp: 20, minutes: 1 };
+      let next = recordDialogue(addStudy(current, study), dialogueId, mistakes);
+      for (const evidence of challenge ? (missionSummary.evidence ?? []) : []) {
+        next = recordAttempt(next, {
+          itemId: `dialogue:${dialogueId}`,
+          skill: evidence.skill,
+          mode: evidence.mode,
+          score: evidence.score,
+          occurredAt: new Date().toISOString(),
+        });
+      }
+      return next;
+    });
+    showToast(missionSummary?.mode === "challenge"
+      ? `Mission complete · ${missionSummary.independent} independent ${missionSummary.independent === 1 ? "turn" : "turns"}`
+      : `Scene complete · ${mistakes ? `${mistakes} useful ${mistakes === 1 ? "retry" : "retries"}` : "no retries"}`);
   };
 
   const recordPracticeAttempt = (itemId, skill, mode, score) => {
@@ -537,16 +559,17 @@ function App() {
 
   const currentLabel = view === "session" ? "Daily session" : NAV_ITEMS.find((item) => item.id === view)?.label;
   const dueCount = getDuePhrases(activeProgress).length;
-  const focusMode = view === "session";
+  const focusMode = view === "session" || (view === "dialogues" && dialogueMissionActive);
+  const dialogueBackgroundInert = view === "dialogues" && dialoguePickerOpen;
 
   return (
     <>
-    <a className="skip-link" href="#main-content" onClick={skipToContent}>Skip to main content</a>
+    <a className="skip-link" href="#main-content" onClick={skipToContent} inert={dialogueBackgroundInert}>Skip to main content</a>
     <div className={`app-shell ${focusMode ? "learning-mode" : ""}`}>
-      {!focusMode && <Sidebar view={view} progress={activeProgress} dueCount={dueCount} onNavigate={navigate} theme={theme} onToggleTheme={toggleTheme} />}
+      {!focusMode && <Sidebar view={view} progress={activeProgress} dueCount={dueCount} onNavigate={navigate} theme={theme} onToggleTheme={toggleTheme} inert={dialogueBackgroundInert} />}
 
       <div className={`app-main ${focusMode ? "focus-mode" : ""}`}>
-        {!focusMode && <MobileHeader label={currentLabel} xp={activeProgress.xp} theme={theme} onToggleTheme={toggleTheme} />}
+        {!focusMode && <MobileHeader label={currentLabel} xp={activeProgress.xp} theme={theme} onToggleTheme={toggleTheme} inert={dialogueBackgroundInert} />}
         {demoProgress && <div className="demo-banner" role="status"><span><strong>Sample progress</strong>Your saved learning record is untouched.</span><button className="secondary-button" onClick={exitDemo}>Exit demo</button></div>}
         {!demoProgress && storageIssue && <div className="storage-alert" role="alert"><CircleHelp size={18} /><span><strong>Local progress needs attention</strong>{storageIssue.message}</span><button className="secondary-button" onClick={retryLocalSave}>{storageIssue.kind === "recovery" ? "Use fresh progress" : "Try saving again"}</button></div>}
         <main id="main-content" className="content" ref={mainRef} tabIndex={-1}>
@@ -557,7 +580,7 @@ function App() {
               {view === "course" && <CourseView progress={activeProgress} onOpenUnit={openUnit} />}
               {view === "practice" && <PracticePage progress={activeProgress} award={award} onAttempt={recordPracticeAttempt} initialMode={route.practice.mode} initialTopic={route.practice.topic} />}
               {view === "sounds" && <SoundsView award={award} />}
-              {view === "dialogues" && <DialoguesPage progress={activeProgress} onCorrect={() => award({ xp: 10, minutes: 1 }, "+10 XP · Natural response")} onCompleteDialogue={completeDialogue} />}
+              {view === "dialogues" && <DialoguesPage progress={activeProgress} onCorrect={() => award({ xp: 10, minutes: 1 }, "+10 XP · Natural response")} onCompleteDialogue={completeDialogue} onMissionStateChange={setDialogueMissionActive} onPickerStateChange={setDialoguePickerOpen} />}
               {view === "grammar" && <GrammarView onNavigate={navigate} />}
               {view === "data" && <ProgressDataView progress={activeProgress} onReplaceProgress={replaceProgress} onNavigatePractice={(mode, topic) => navigate("practice", { mode, topic })} onOpenUnit={openUnit} onCompleteMilestone={completeMilestone} onAttempt={recordPracticeAttempt} />}
             </FocusWhenReady>
@@ -565,7 +588,7 @@ function App() {
         </main>
       </div>
 
-      {!focusMode && <BottomNav view={view} dueCount={dueCount} progress={activeProgress} onNavigate={navigate} />}
+      {!focusMode && <BottomNav view={view} dueCount={dueCount} progress={activeProgress} onNavigate={navigate} inert={dialogueBackgroundInert} />}
       {activeUnit && <UnitLesson unit={activeUnit} progress={activeProgress} onClose={() => setActiveUnit(null)} award={award} returnFocus={unitTriggerRef.current} />}
       {placementOpen && <PlacementCheck onComplete={completePlacement} onClose={() => setPlacementOpen(false)} />}
       {updateReady && (

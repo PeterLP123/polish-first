@@ -20,10 +20,58 @@ describe("dialogue scene browser", () => {
   });
 
   it("returns focus to the scene trigger when the picker closes", async () => {
-    render(<DialoguesView progress={DEFAULT_PROGRESS} onCorrect={vi.fn()} onCompleteDialogue={vi.fn()} />);
+    const onPickerStateChange = vi.fn();
+    render(<DialoguesView progress={DEFAULT_PROGRESS} onCorrect={vi.fn()} onCompleteDialogue={vi.fn()} onPickerStateChange={onPickerStateChange} />);
     const trigger = screen.getByRole("button", { name: /change scene/i });
     fireEvent.click(trigger);
-    fireEvent.click(within(screen.getByRole("dialog", { name: /choose a conversation scene/i })).getByRole("button", { name: /close scene picker/i }));
+    const picker = screen.getByRole("dialog", { name: /choose a conversation scene/i });
+    expect(picker.tagName).toBe("SECTION");
+    expect(document.querySelector(".page-header")).toHaveAttribute("inert");
+    expect(document.querySelector(".dialogue-active")).toHaveAttribute("inert");
+    expect(onPickerStateChange).toHaveBeenLastCalledWith(true);
+    fireEvent.click(within(picker).getByRole("button", { name: /close scene picker/i }));
     await waitFor(() => expect(trigger).toHaveFocus());
+    expect(document.querySelector(".page-header")).not.toHaveAttribute("inert");
+    expect(document.querySelector(".dialogue-active")).not.toHaveAttribute("inert");
+    expect(onPickerStateChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("offers Challenge first while keeping the supported walkthrough intact", async () => {
+    const onMissionStateChange = vi.fn();
+    render(<DialoguesView progress={DEFAULT_PROGRESS} onCorrect={vi.fn()} onCompleteDialogue={vi.fn()} onMissionStateChange={onMissionStateChange} />);
+    expect(screen.getByRole("button", { name: /challenge polish first/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("heading", { level: 2, name: /take away the script/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /supported choices visible/i }));
+    expect(screen.getByRole("button", { name: /supported choices visible/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/HOW DO YOU RESPOND/i)).toBeInTheDocument();
+    expect(screen.getByText("Poproszę kawę z mlekiem.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Dzień dobry. Co podać/i })).toHaveFocus();
+    expect(onMissionStateChange).toHaveBeenLastCalledWith(true);
+  });
+
+  it("moves focus into the supported walkthrough when chosen from the mission briefing", () => {
+    render(<DialoguesView progress={DEFAULT_PROGRESS} onCorrect={vi.fn()} onCompleteDialogue={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /use supported walkthrough/i }));
+    expect(screen.getByRole("heading", { name: /Dzień dobry. Co podać/i })).toHaveFocus();
+  });
+
+  it("focuses Supported feedback and each new turn while removing resolved choices from the keyboard path", async () => {
+    const onMissionStateChange = vi.fn();
+    render(<DialoguesView progress={DEFAULT_PROGRESS} onCorrect={vi.fn()} onCompleteDialogue={vi.fn()} onMissionStateChange={onMissionStateChange} />);
+    fireEvent.click(screen.getByRole("button", { name: /supported choices visible/i }));
+
+    const firstOptions = within(document.querySelector(".response-options")).getAllByRole("button");
+    fireEvent.click(firstOptions[0]);
+    const continueButton = screen.getByRole("button", { name: /continue/i });
+    await waitFor(() => expect(continueButton).toHaveFocus());
+    firstOptions.forEach((option) => expect(option).toBeDisabled());
+
+    fireEvent.click(continueButton);
+    expect(screen.getByRole("heading", { name: /Na miejscu czy na wynos/i })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole("button", { name: /exit walkthrough/i }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /supported choices visible/i })).toHaveFocus());
+    expect(screen.getByRole("button", { name: /challenge polish first/i })).toHaveAttribute("aria-pressed", "true");
+    expect(onMissionStateChange).toHaveBeenLastCalledWith(false);
   });
 });

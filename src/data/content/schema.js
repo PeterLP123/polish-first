@@ -56,10 +56,15 @@ export function validateContentCatalog(catalog, expected = {}) {
 
   for (const dialogue of catalog.dialogues) {
     if (!STAGES.includes(dialogue.stage)) errors.push(`${dialogue.id}: invalid dialogue stage`);
+    if (!dialogue.mission?.goal || !dialogue.mission?.canDo) errors.push(`${dialogue.id}: missing conversation mission copy`);
     if (dialogue.lines?.length !== 5) errors.push(`${dialogue.id}: dialogue must have five turns`);
     for (const line of dialogue.lines ?? []) {
       if (!line.polish || !line.phonetic || !line.english || line.choices?.length < 3) errors.push(`${dialogue.id}: invalid dialogue turn`);
-      if ((line.choices ?? []).filter((choice) => choice.good).length < 2 || !(line.choices ?? []).some((choice) => !choice.good)) errors.push(`${dialogue.id}: invalid dialogue choices`);
+      if ((line.choices ?? []).some((choice) => !choice.polish || !choice.phonetic || !choice.english)) errors.push(`${dialogue.id}: incomplete dialogue response`);
+      const natural = (line.choices ?? []).filter((choice) => choice.good);
+      if (natural.length !== 2 || !(line.choices ?? []).some((choice) => !choice.good)) errors.push(`${dialogue.id}: invalid dialogue choices`);
+      if (new Set(natural.map((choice) => choice.polish)).size !== natural.length) errors.push(`${dialogue.id}: duplicate natural dialogue response`);
+      if (natural.some((choice) => /^(powiedz|napisz|odpowiedz):/iu.test(choice.polish.trim()))) errors.push(`${dialogue.id}: instructional text cannot be a learner response`);
     }
   }
 

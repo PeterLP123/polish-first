@@ -81,4 +81,26 @@ test("keeps every primary view and learning shell visually stable", async ({ pag
     scale: "css",
     maxDiffPixelRatio: 0.005,
   });
+
+  await resetAt(page, "dialogues");
+  await page.getByRole("button", { name: /start challenge/i }).click();
+  await expect(page.getByRole("progressbar", { name: /conversation mission progress/i })).toHaveAttribute("aria-valuenow", "1");
+  await settlePage(page);
+  await expect(page).toHaveScreenshot("conversation-mission.png", {
+    animations: "disabled",
+    scale: "css",
+    maxDiffPixelRatio: 0.005,
+  });
+
+  for (let turn = 0; turn < 5; turn += 1) {
+    await page.getByRole("button", { name: /answered aloud/i }).click();
+    await page.getByRole("button", { name: /my response worked/i }).click();
+  }
+  await expect(page.getByRole("heading", { name: /I can order and pay in a Polish café/i })).toBeVisible();
+  await settlePage(page);
+  await expect(page).toHaveScreenshot("conversation-mission-summary.png", {
+    animations: "disabled",
+    scale: "css",
+    maxDiffPixelRatio: 0.005,
+  });
 });

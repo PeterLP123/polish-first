@@ -57,6 +57,175 @@ test("finishes a bounded Focus Review and repairs tough phrases once", async ({ 
   expect(saved).toMatchObject({ version: 7, xp: 0, totalReviews: 0 });
 });
 
+test("completes a Conversation Mission while keeping drafts ephemeral and progress on v7", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#dialogues");
+  await page.getByRole("button", { name: /start challenge/i }).click();
+  await expect(page.getByRole("progressbar", { name: /conversation mission progress/i })).toHaveAttribute("aria-valuenow", "1");
+  await expect(page.locator(".bottom-nav")).toBeHidden();
+  await expect(page.locator(".mission-incoming h1")).toBeInViewport();
+  const actionHeights = await page.locator(".mission-response-actions button").evaluateAll((buttons) => buttons.map((button) => Math.round(button.getBoundingClientRect().height)));
+  expect(actionHeights.every((height) => height >= 44 && height <= 64), `mission actions should stay compact: ${actionHeights.join(", ")}`).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+
+  const activeAxe = await new AxeBuilder({ page }).analyze();
+  expect(activeAxe.violations.map((violation) => ({ id: violation.id, impact: violation.impact }))).toEqual([]);
+
+  const privateDraft = "Mój prywatny szkic 7x";
+  await page.getByRole("textbox", { name: /optional Polish draft/i }).fill(privateDraft);
+  await page.getByRole("button", { name: /compare my Polish/i }).click();
+  await page.getByRole("button", { name: /^I needed the model$/i }).click();
+
+  await page.getByRole("button", { name: /give me a hint/i }).click();
+  await page.getByRole("button", { name: /answered aloud/i }).click();
+  await page.getByRole("button", { name: /my response worked/i }).click();
+
+  for (let turn = 0; turn < 3; turn += 1) {
+    await page.getByRole("button", { name: /answered aloud/i }).click();
+    await page.getByRole("button", { name: /my response worked/i }).click();
+  }
+
+  await expect(page.getByRole("heading", { name: /I can order and pay in a Polish café/i })).toBeVisible();
+  const summary = page.locator(".mission-summary-grid article");
+  await expect(summary.nth(0)).toContainText("3Independent");
+  await expect(summary.nth(1)).toContainText("1Supported");
+  await expect(summary.nth(2)).toContainText("1Modelled");
+  await expect(page.locator(".bottom-nav")).toBeHidden();
+
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("polish-first-progress")))).toMatchObject({
+    version: 7,
+    xp: 60,
+    totalReviews: 0,
+    activeSession: null,
+    dialogueStats: { cafe: { completions: 1, bestMistakes: 1 } },
+  });
+  const storageAudit = await page.evaluate((draft) => {
+    const raw = localStorage.getItem("polish-first-progress");
+    return { raw, keys: Object.keys(JSON.parse(raw)).sort(), containsDraft: raw.includes(draft) };
+  }, privateDraft);
+  expect(storageAudit.containsDraft).toBe(false);
+  expect(storageAudit.keys).toEqual([
+    "activeSession", "analyticsSince", "assessmentHistory", "completedUnits", "dailyGoal", "dailyStats", "dialogueStats",
+    "lastStudyDate", "learnedPhrases", "learnerProfile", "milestoneStats", "phraseStats", "skillStats", "streak",
+    "studyDates", "todayMinutes", "totalReviews", "version", "xp",
+  ]);
+
+  await page.getByRole("button", { name: /repair 1 turn/i }).click();
+  await expect(page.locator(".bottom-nav")).toBeHidden();
+  await page.getByRole("button", { name: /answered aloud/i }).click();
+  await expect(page.locator(".mission-model-card.primary strong")).toHaveText("Poproszę kawę z mlekiem.");
+  await page.getByRole("button", { name: /recalled it this time/i }).click();
+  await expect(page.getByText(/retrieved 1 previously modelled turn/i)).toBeVisible();
+  await expect(page.locator(".bottom-nav")).toBeHidden();
+
+  const afterRepair = await page.evaluate(() => JSON.parse(localStorage.getItem("polish-first-progress")));
+  expect(afterRepair).toMatchObject({ xp: 60, dialogueStats: { cafe: { completions: 1, bestMistakes: 1 } } });
+  const summaryAxe = await new AxeBuilder({ page }).analyze();
+  expect(summaryAxe.violations.map((violation) => ({ id: violation.id, impact: violation.impact }))).toEqual([]);
+  await page.getByRole("button", { name: /choose another scene/i }).click();
+  await expect(page.getByRole("dialog", { name: /choose a conversation scene/i })).toBeVisible();
+  await expect(page.locator(".bottom-nav")).toBeVisible();
+});
+
+test("treats a fully modelled mission as study, not productive speaking evidence", async ({ page }) => {
+  await page.goto("/#dialogues");
+  await page.getByRole("button", { name: /start challenge/i }).click();
+  for (let turn = 0; turn < 5; turn += 1) {
+    await page.getByRole("button", { name: /show me a model/i }).click();
+    await page.getByRole("button", { name: /studied the model/i }).click();
+  }
+  await expect(page.getByRole("heading", { level: 1, name: /I can order and pay in a Polish café/i })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("polish-first-progress")))).toMatchObject({
+    version: 7,
+    xp: 20,
+    todayMinutes: 6,
+    dialogueStats: { cafe: { completions: 1, bestMistakes: 5 } },
+    skillStats: {},
+  });
+});
+
+test("records productive typed mission work as writing rather than speaking", async ({ page }) => {
+  await page.goto("/#dialogues");
+  await page.getByRole("button", { name: /start challenge/i }).click();
+  await page.getByRole("textbox", { name: /optional Polish draft/i }).fill("Poproszę kawę z mlekiem.");
+  await page.getByRole("button", { name: /compare my Polish/i }).click();
+  await page.getByRole("button", { name: /my response worked/i }).click();
+
+  for (let turn = 0; turn < 4; turn += 1) {
+    await page.getByRole("button", { name: /show me a model/i }).click();
+    await page.getByRole("button", { name: /studied the model/i }).click();
+  }
+
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("polish-first-progress")))).toMatchObject({
+    xp: 30,
+    todayMinutes: 6,
+    dialogueStats: { cafe: { completions: 1, bestMistakes: 4 } },
+    skillStats: { "dialogue:cafe": { writing: { attempts: 1, points: 1, lastScore: 1 } } },
+  });
+  const dialogueEvidence = await page.evaluate(() => JSON.parse(localStorage.getItem("polish-first-progress")).skillStats["dialogue:cafe"]);
+  expect(dialogueEvidence.speaking).toBeUndefined();
+});
+
+test("keeps the 320px mission entry compact and clear of fixed navigation", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto("/#dialogues");
+  const challenge = page.getByRole("button", { name: /challenge polish first/i });
+  const supported = page.getByRole("button", { name: /supported choices visible/i });
+  await expect(challenge).toBeVisible();
+  const [challengeBox, supportedBox, navBox, startBox] = await Promise.all([
+    challenge.boundingBox(),
+    supported.boundingBox(),
+    page.locator(".bottom-nav").boundingBox(),
+    page.getByRole("button", { name: /start challenge/i }).boundingBox(),
+  ]);
+  expect(Math.abs(challengeBox.y - supportedBox.y)).toBeLessThanOrEqual(2);
+  for (const control of [challengeBox, supportedBox]) {
+    expect(control.y + control.height <= navBox.y || control.y >= navBox.y + navBox.height).toBe(true);
+  }
+  expect(startBox.y, "Start Challenge should not be buried more than 1.5 viewports down").toBeLessThan(1050);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+});
+
+test("keeps the Supported walkthrough focused, keyboard-clean and modal-safe on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto("/#dialogues");
+  await page.getByRole("button", { name: /supported choices visible/i }).click();
+
+  const firstHeading = page.getByRole("heading", { name: /Dzień dobry. Co podać/i });
+  await expect(firstHeading).toBeFocused();
+  await expect(page.locator(".bottom-nav")).toBeHidden();
+  await expect(page.getByRole("button", { name: /exit walkthrough/i })).toBeVisible();
+  const initialAxe = await new AxeBuilder({ page }).analyze();
+  expect(initialAxe.violations.map((violation) => ({ id: violation.id, impact: violation.impact }))).toEqual([]);
+
+  const choices = page.locator(".response-options button");
+  await choices.first().click();
+  const continueButton = page.getByRole("button", { name: /continue/i });
+  await expect(continueButton).toBeFocused();
+  await expect(continueButton).toBeInViewport();
+  for (let index = 0; index < await choices.count(); index += 1) await expect(choices.nth(index)).toBeDisabled();
+  const feedbackAxe = await new AxeBuilder({ page }).analyze();
+  expect(feedbackAxe.violations.map((violation) => ({ id: violation.id, impact: violation.impact }))).toEqual([]);
+
+  await continueButton.click();
+  await expect(page.getByRole("heading", { name: /Na miejscu czy na wynos/i })).toBeFocused();
+  await page.getByRole("button", { name: /exit walkthrough/i }).click();
+  await expect(page.locator(".bottom-nav")).toBeVisible();
+  await expect(page.getByRole("button", { name: /supported choices visible/i })).toBeFocused();
+
+  await page.getByRole("button", { name: /change scene/i }).click();
+  const picker = page.getByRole("dialog", { name: /choose a conversation scene/i });
+  await expect(picker).toBeVisible();
+  expect(await picker.evaluate((element) => element.tagName)).toBe("SECTION");
+  for (const locator of [page.locator(".skip-link"), page.locator(".mobile-header"), page.locator(".bottom-nav"), page.locator(".page-header"), page.locator(".dialogue-active")]) {
+    await expect(locator).toHaveAttribute("inert", "");
+  }
+  const pickerAxe = await new AxeBuilder({ page }).analyze();
+  expect(pickerAxe.violations.map((violation) => ({ id: violation.id, impact: violation.impact }))).toEqual([]);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: /change scene/i })).toBeFocused();
+});
+
 test("keeps core pages within the mobile viewport", async ({ page }) => {
   const sizes = [
     { width: 320, height: 700 },
@@ -146,6 +315,18 @@ test("uses responsive pickers for dialogues and sounds", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: /choose a Polish sound/i })).toBeVisible();
   await page.getByRole("button", { name: /sz sh in/i }).click();
   await expect(page.getByRole("heading", { name: /sh in/i })).toBeVisible();
+});
+
+test("keeps keyboard focus inside the desktop conversation picker", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/#dialogues");
+  await page.getByRole("button", { name: /change scene/i }).click();
+  const search = page.getByRole("searchbox", { name: /search conversation scenes/i });
+  await expect(search).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByRole("button", { name: /finding the station/i })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(search).toBeFocused();
 });
 
 test("filters and expands grammar explainers", async ({ page }) => {

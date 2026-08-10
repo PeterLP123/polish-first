@@ -34,9 +34,9 @@ function ThemeToggle({ theme, onToggle, className = "theme-toggle" }) {
   );
 }
 
-export function Sidebar({ view, progress, dueCount = 0, onNavigate, theme, onToggleTheme }) {
+export function Sidebar({ view, progress, dueCount = 0, onNavigate, theme, onToggleTheme, inert = false }) {
   return (
-    <aside className="sidebar" aria-label="Learning navigation">
+    <aside className="sidebar" aria-label="Learning navigation" inert={inert}>
       <div className="sidebar-topline"><button className="brand" onClick={() => onNavigate("home")}><span className="brand-mark">Cz</span><span><strong>Cześć!</strong><small>Polish for real life</small></span></button></div>
       <nav aria-label="Main navigation">
         {NAV_GROUPS.map((group) => (
@@ -55,9 +55,9 @@ export function Sidebar({ view, progress, dueCount = 0, onNavigate, theme, onTog
   );
 }
 
-export function MobileHeader({ label, xp, theme, onToggleTheme }) {
+export function MobileHeader({ label, xp, theme, onToggleTheme, inert = false }) {
   return (
-    <header className="mobile-header">
+    <header className="mobile-header" inert={inert}>
       <div className="mobile-brand"><span>Cz</span><strong>{label}</strong></div>
       <div className="mobile-header-actions">
         <span className="mobile-xp"><Zap size={16} /> {xp}</span>
@@ -67,7 +67,7 @@ export function MobileHeader({ label, xp, theme, onToggleTheme }) {
   );
 }
 
-export function BottomNav({ view, dueCount = 0, progress, onNavigate }) {
+export function BottomNav({ view, dueCount = 0, progress, onNavigate, inert = false }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreButtonRef = useRef(null);
   const sheetRef = useRef(null);
@@ -112,7 +112,7 @@ export function BottomNav({ view, dueCount = 0, progress, onNavigate }) {
 
   return (
     <>
-      <nav className="bottom-nav" aria-label="Mobile navigation">
+      <nav className="bottom-nav" aria-label="Mobile navigation" inert={inert}>
         {primary.map(({ id, label, icon: Icon }) => (
           <button key={id} className={view === id ? "active" : ""} aria-current={view === id ? "page" : undefined} onClick={() => go(id)}>
             <Icon size={20} /><span>{label}</span>

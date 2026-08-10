@@ -20,7 +20,7 @@ The app has no account system or external backend. Progress stays in the browser
 
 | Curriculum | Practice | Progress |
 | --- | --- | --- |
-| 81 conversation-led units | 42 branching dialogues | Due-date spaced repetition |
+| 81 conversation-led units | 42 supported scenes + production-first missions | Due-date spaced repetition |
 | 938 useful words and phrases | 24 Polish sound lessons | Finite guided daily sessions |
 | 66 grammar explainers | 36 readings + 36 writing tasks | XP, streaks, goals, and mastery |
 | Beginner survival Polish → B2 bridge | Focus Review plus flashcard, listening, building, speaking, reading, writing, and grammar modes | 10 multi-skill stage checks |
@@ -31,7 +31,7 @@ The app has no account system or external backend. Progress stays in the browser
 - **Practise without perfect hardware.** Microphone recognition is optional; phone dictation and self-report fallbacks keep speaking work available across browsers.
 - **Review what is actually weak.** Again, Hard, Good, and Easy ratings schedule due reviews and prioritise weaker phrases.
 - **Repair weak spots without an endless feed.** Focus Review gives up to ten English-to-Polish retrievals, then offers one bounded repair pass for Hard and Again phrases.
-- **Move from recall to conversation.** Five-turn dialogue scenes cover introductions, travel, work, negotiations, presentations, and more.
+- **Move from recall to conversation.** Every five-turn scene has a supported walkthrough and a production-first mission with staged hints, two authored natural responses per turn, and one bounded repair pass.
 - **Keep sessions finishable.** Daily plans interleave due reviews with new language, explain adaptive choices, and still finish with one real-life dialogue.
 - **Own your progress.** Learning data stays in `localStorage` and can be validated, exported, and imported.
 
@@ -45,7 +45,7 @@ The app has no account system or external backend. Progress stays in the browser
     </td>
     <td width="50%">
       <img src="e2e/visual.spec.js-snapshots/dialogues-chromium-desktop-darwin.png" alt="Branching Polish conversation practice">
-      <br><strong>Dialogues</strong> — practical scenes with branching responses.
+      <br><strong>Conversation Missions</strong> — practical scenes that move from visible support to Polish-first production.
     </td>
   </tr>
   <tr>
